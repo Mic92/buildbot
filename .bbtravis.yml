@@ -181,6 +181,12 @@ script:
       export PATH=/tmp/bbvenv/bin/:$PATH
       isort --check -df `git ls-files |grep '.py$'`
 
+  - title: ruff-format
+    condition: TESTS == "ruff"
+    cmd:  |
+      export PATH=/tmp/bbvenv/bin/:$PATH
+      ruff format --check --diff .
+
   # Build documentation
   - title: docs
     condition: TESTS == "docs"
