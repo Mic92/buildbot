@@ -1,3 +1,7 @@
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+
 [tool.towncrier]
     package = "buildbot"
     package_dir = "master"
