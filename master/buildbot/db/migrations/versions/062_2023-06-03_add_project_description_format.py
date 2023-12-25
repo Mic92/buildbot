@@ -23,8 +23,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '062'
-down_revision = '061'
+revision = "062"
+down_revision = "061"
 branch_labels = None
 depends_on = None
 
@@ -32,10 +32,10 @@ depends_on = None
 def upgrade():
     with op.batch_alter_table("projects") as batch_op:
         batch_op.add_column(
-            sa.Column('description_format', sa.Text, nullable=True),
+            sa.Column("description_format", sa.Text, nullable=True),
         )
         batch_op.add_column(
-            sa.Column('description_html', sa.Text, nullable=True),
+            sa.Column("description_html", sa.Text, nullable=True),
         )
 
 

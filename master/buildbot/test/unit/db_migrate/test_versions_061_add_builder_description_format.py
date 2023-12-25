@@ -24,7 +24,6 @@ from buildbot.util import sautils
 
 
 class Migration(migration.MigrateTestMixin, unittest.TestCase):
-
     def setUp(self):
         return self.setUpMigrateTest()
 
@@ -36,22 +35,28 @@ class Migration(migration.MigrateTestMixin, unittest.TestCase):
         metadata.bind = conn
 
         builders = sautils.Table(
-            'builders', metadata,
-            sa.Column('id', sa.Integer, primary_key=True),
-            sa.Column('name', sa.Text, nullable=False),
-            sa.Column('description', sa.Text, nullable=True),
-            sa.Column('projectid', sa.Integer, nullable=True),
-            sa.Column('name_hash', sa.String(40), nullable=False),
+            "builders",
+            metadata,
+            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("name", sa.Text, nullable=False),
+            sa.Column("description", sa.Text, nullable=True),
+            sa.Column("projectid", sa.Integer, nullable=True),
+            sa.Column("name_hash", sa.String(40), nullable=False),
         )
         builders.create()
 
-        conn.execute(builders.insert(), [{
-            "id": 3,
-            "name": "foo",
-            "description": "foo_description",
-            "projectid": None,
-            "name_hash": hashlib.sha1(b'foo').hexdigest()
-        }])
+        conn.execute(
+            builders.insert(),
+            [
+                {
+                    "id": 3,
+                    "name": "foo",
+                    "description": "foo_description",
+                    "projectid": None,
+                    "name_hash": hashlib.sha1(b"foo").hexdigest(),
+                }
+            ],
+        )
 
     def test_update(self):
         def setup_thd(conn):
@@ -61,15 +66,17 @@ class Migration(migration.MigrateTestMixin, unittest.TestCase):
             metadata = sa.MetaData()
             metadata.bind = conn
 
-            builders = sautils.Table('builders', metadata, autoload=True)
+            builders = sautils.Table("builders", metadata, autoload=True)
             self.assertIsInstance(builders.c.description_format.type, sa.Text)
             self.assertIsInstance(builders.c.description_html.type, sa.Text)
 
-            q = sa.select([
-                builders.c.name,
-                builders.c.description_format,
-                builders.c.description_html
-            ])
+            q = sa.select(
+                [
+                    builders.c.name,
+                    builders.c.description_format,
+                    builders.c.description_html,
+                ]
+            )
 
             num_rows = 0
             for row in conn.execute(q):
@@ -78,4 +85,4 @@ class Migration(migration.MigrateTestMixin, unittest.TestCase):
                 num_rows += 1
             self.assertEqual(num_rows, 1)
 
-        return self.do_test_migration('060', '061', setup_thd, verify_thd)
+        return self.do_test_migration("060", "061", setup_thd, verify_thd)

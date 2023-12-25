@@ -20,12 +20,11 @@ from buildbot.util import lineboundaries
 
 
 class FakeLogFile:
-
     def __init__(self, name):
         self.name = name
-        self.header = ''
-        self.stdout = ''
-        self.stderr = ''
+        self.header = ""
+        self.stdout = ""
+        self.stderr = ""
         self.lbfs = {}
         self.finished = False
         self._finish_waiters = []
@@ -58,44 +57,44 @@ class FakeLogFile:
 
     def addHeader(self, text):
         if not isinstance(text, str):
-            text = text.decode('utf-8')
+            text = text.decode("utf-8")
         self.header += text
-        self._split_lines('h', text)
+        self._split_lines("h", text)
         return defer.succeed(None)
 
     def addStdout(self, text):
         if not isinstance(text, str):
-            text = text.decode('utf-8')
+            text = text.decode("utf-8")
         self.stdout += text
-        self._split_lines('o', text)
+        self._split_lines("o", text)
         return defer.succeed(None)
 
     def addStderr(self, text):
         if not isinstance(text, str):
-            text = text.decode('utf-8')
+            text = text.decode("utf-8")
         self.stderr += text
-        self._split_lines('e', text)
+        self._split_lines("e", text)
         return defer.succeed(None)
 
     def add_header_lines(self, text):
         if not isinstance(text, str):
-            text = text.decode('utf-8')
+            text = text.decode("utf-8")
         self.header += text
-        self._on_whole_lines('h', text)
+        self._on_whole_lines("h", text)
         return defer.succeed(None)
 
     def add_stdout_lines(self, text):
         if not isinstance(text, str):
-            text = text.decode('utf-8')
+            text = text.decode("utf-8")
         self.stdout += text
-        self._on_whole_lines('o', text)
+        self._on_whole_lines("o", text)
         return defer.succeed(None)
 
     def add_stderr_lines(self, text):
         if not isinstance(text, str):
-            text = text.decode('utf-8')
+            text = text.decode("utf-8")
         self.stderr += text
-        self._on_whole_lines('e', text)
+        self._on_whole_lines("e", text)
         return defer.succeed(None)
 
     def isFinished(self):
@@ -135,7 +134,7 @@ class FakeLogFile:
         for d in self._finish_waiters:
             d.callback(None)
 
-    def fakeData(self, header='', stdout='', stderr=''):
+    def fakeData(self, header="", stdout="", stderr=""):
         if header:
             self.header += header
         if stdout:

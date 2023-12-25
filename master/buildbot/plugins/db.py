@@ -27,7 +27,7 @@ from buildbot.errors import PluginDBError
 from buildbot.interfaces import IPlugin
 
 # Base namespace for Buildbot specific plugins
-_NAMESPACE_BASE = 'buildbot'
+_NAMESPACE_BASE = "buildbot"
 
 
 def find_distribution_info(entry_point_name, entry_point_group):
@@ -36,14 +36,16 @@ def find_distribution_info(entry_point_name, entry_point_group):
         try:
             for ep in distribution.entry_points:
                 if ep.name == entry_point_name and ep.group == entry_point_group:
-                    return (distribution.metadata['Name'], distribution.metadata['Version'])
+                    return (
+                        distribution.metadata["Name"],
+                        distribution.metadata["Version"],
+                    )
         except KeyError as exc:
             raise PluginDBError("Plugin info was found, but it is invalid.") from exc
     raise PluginDBError("Plugin info not found.")
 
 
 class _PluginEntry:
-
     def __init__(self, group, entry, loader):
         self._group = group
         self._entry = entry
@@ -134,7 +136,7 @@ class _NSNode:
         self._add(name, entry)
 
     def _add(self, name, entry):
-        path = name.split('.', 1)
+        path = name.split(".", 1)
         key = path.pop(0)
         is_leaf = not path
         child = self._children.get(key)
@@ -145,8 +147,9 @@ class _NSNode:
                 if child != entry:
                     raise PluginDBError(
                         f'Duplicate entry point for "{child.group}:{child.name}".\n'
-                        f'  Previous definition {child.info}\n'
-                        f'  This definition {entry.info}')
+                        f"  Previous definition {child.info}\n"
+                        f"  This definition {entry.info}"
+                    )
             else:
                 self._children[key] = entry
         else:
@@ -159,7 +162,7 @@ class _NSNode:
     def __getattr__(self, name):
         child = self._children.get(name)
         if child is None:
-            raise PluginDBError(f'Unknown component name: {name}')
+            raise PluginDBError(f"Unknown component name: {name}")
 
         if isinstance(child, _PluginEntry):
             return child.value
@@ -176,17 +179,17 @@ class _NSNode:
         return self._get(name).value
 
     def _get(self, name):
-        path = name.split('.', 1)
+        path = name.split(".", 1)
         key = path.pop(0)
         is_leaf = not path
         child = self._children.get(key)
 
         if isinstance(child, _PluginEntry):
             if not is_leaf:
-                raise PluginDBError(f'Excessive namespace specification: {path[0]}')
+                raise PluginDBError(f"Excessive namespace specification: {path[0]}")
             return child
         elif child is None:
-            raise PluginDBError(f'Unknown component name: {name}')
+            raise PluginDBError(f"Unknown component name: {name}")
         else:
             return child._get(path[0])
 
@@ -196,10 +199,12 @@ class _NSNode:
             if isinstance(child, _PluginEntry):
                 result.append((key, child.info))
             else:
-                result.extend([
-                    (f'{key}.{name}', value)
-                    for name, value in child.info_all().items()
-                ])
+                result.extend(
+                    [
+                        (f"{key}.{name}", value)
+                        for name, value in child.info_all().items()
+                    ]
+                )
         return result
 
     def info_all(self):
@@ -216,7 +221,7 @@ class _Plugins:
         if interface is not None:
             assert interface.isOrExtends(IPlugin)
 
-        self._group = f'{_NAMESPACE_BASE}.{namespace}'
+        self._group = f"{_NAMESPACE_BASE}.{namespace}"
 
         self._interface = interface
         self._real_tree = None
@@ -228,14 +233,17 @@ class _Plugins:
         except Exception as e:
             # log full traceback of the bad entry to help support
             traceback.print_exc()
-            raise PluginDBError(f'Unable to load {self._group}:{entry.name}: {str(e)}') from e
+            raise PluginDBError(
+                f"Unable to load {self._group}:{entry.name}: {str(e)}"
+            ) from e
         if self._interface:
             try:
                 verifyClass(self._interface, result)
             except Invalid as e:
                 raise PluginDBError(
-                    f'Plugin {self._group}:{entry.name} does not implement '
-                    f'{self._interface.__name__}: {str(e)}') from e
+                    f"Plugin {self._group}:{entry.name} does not implement "
+                    f"{self._interface.__name__}: {str(e)}"
+                ) from e
         return result
 
     @property
@@ -244,9 +252,9 @@ class _Plugins:
             self._real_tree = _NSNode()
             entries = entry_points().get(self._group, [])
             for entry in entries:
-                self._real_tree.add(entry.name,
-                                    _PluginEntry(self._group, entry,
-                                                 self._load_entry))
+                self._real_tree.add(
+                    entry.name, _PluginEntry(self._group, entry, self._load_entry)
+                )
         return self._real_tree
 
     def load(self):

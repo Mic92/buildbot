@@ -24,7 +24,6 @@ from buildbot.util import sautils
 
 
 class Migration(migration.MigrateTestMixin, unittest.TestCase):
-
     def setUp(self):
         return self.setUpMigrateTest()
 
@@ -36,20 +35,26 @@ class Migration(migration.MigrateTestMixin, unittest.TestCase):
         metadata.bind = conn
 
         builders = sautils.Table(
-            'builders', metadata,
-            sa.Column('id', sa.Integer, primary_key=True),
-            sa.Column('name', sa.Text, nullable=False),
-            sa.Column('description', sa.Text, nullable=True),
-            sa.Column('name_hash', sa.String(40), nullable=False),
+            "builders",
+            metadata,
+            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("name", sa.Text, nullable=False),
+            sa.Column("description", sa.Text, nullable=True),
+            sa.Column("name_hash", sa.String(40), nullable=False),
         )
         builders.create()
 
-        conn.execute(builders.insert(), [{
-            "id": 3,
-            "name": "foo",
-            "description": "foo_description",
-            "name_hash": hashlib.sha1(b'foo').hexdigest()
-        }])
+        conn.execute(
+            builders.insert(),
+            [
+                {
+                    "id": 3,
+                    "name": "foo",
+                    "description": "foo_description",
+                    "name_hash": hashlib.sha1(b"foo").hexdigest(),
+                }
+            ],
+        )
 
     def test_update(self):
         def setup_thd(conn):
@@ -60,19 +65,21 @@ class Migration(migration.MigrateTestMixin, unittest.TestCase):
             metadata.bind = conn
 
             # check that projects table has been added
-            projects = sautils.Table('projects', metadata, autoload=True)
+            projects = sautils.Table("projects", metadata, autoload=True)
 
-            q = sa.select([
-                projects.c.id,
-                projects.c.name,
-                projects.c.name_hash,
-                projects.c.slug,
-                projects.c.description,
-            ])
+            q = sa.select(
+                [
+                    projects.c.id,
+                    projects.c.name,
+                    projects.c.name_hash,
+                    projects.c.slug,
+                    projects.c.description,
+                ]
+            )
             self.assertEqual(conn.execute(q).fetchall(), [])
 
             # check that builders.projectid has been added
-            builders = sautils.Table('builders', metadata, autoload=True)
+            builders = sautils.Table("builders", metadata, autoload=True)
             self.assertIsInstance(builders.c.projectid.type, sa.Integer)
 
             q = sa.select([builders.c.name, builders.c.projectid])
@@ -86,12 +93,12 @@ class Migration(migration.MigrateTestMixin, unittest.TestCase):
             # check that new indexes have been added
             insp = sa.inspect(conn)
 
-            indexes = insp.get_indexes('projects')
-            index_names = [item['name'] for item in indexes]
-            self.assertTrue('projects_name_hash' in index_names)
+            indexes = insp.get_indexes("projects")
+            index_names = [item["name"] for item in indexes]
+            self.assertTrue("projects_name_hash" in index_names)
 
-            indexes = insp.get_indexes('builders')
-            index_names = [item['name'] for item in indexes]
-            self.assertTrue('builders_projectid' in index_names)
+            indexes = insp.get_indexes("builders")
+            index_names = [item["name"] for item in indexes]
+            self.assertTrue("builders_projectid" in index_names)
 
-        return self.do_test_migration('059', '060', setup_thd, verify_thd)
+        return self.do_test_migration("059", "060", setup_thd, verify_thd)

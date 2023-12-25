@@ -22,11 +22,13 @@ from buildbot.util import service
 
 
 class myTestedService(service.BuildbotService):
-    name = 'myTestedService'
+    name = "myTestedService"
 
     @defer.inlineCallbacks
     def reconfigService(self, baseurl):
-        self._http = yield httpclientservice.HTTPClientService.getService(self.master, baseurl)
+        self._http = yield httpclientservice.HTTPClientService.getService(
+            self.master, baseurl
+        )
 
     @defer.inlineCallbacks
     def doGetRoot(self):
@@ -40,13 +42,13 @@ class myTestedService(service.BuildbotService):
 
 
 class Test(unittest.TestCase):
-
     @defer.inlineCallbacks
     def setUp(self):
-        baseurl = 'http://127.0.0.1:8080'
+        baseurl = "http://127.0.0.1:8080"
         self.parent = service.MasterService()
         self._http = yield fakehttpclientservice.HTTPClientService.getService(
-            self.parent, self, baseurl)
+            self.parent, self, baseurl
+        )
         self.tested = myTestedService(baseurl)
 
         yield self.tested.setServiceParent(self.parent)
@@ -54,16 +56,16 @@ class Test(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_root(self):
-        self._http.expect("get", "/", content_json={'foo': 'bar'})
+        self._http.expect("get", "/", content_json={"foo": "bar"})
 
         response = yield self.tested.doGetRoot()
-        self.assertEqual(response, {'foo': 'bar'})
+        self.assertEqual(response, {"foo": "bar"})
 
     @defer.inlineCallbacks
     def test_root_error(self):
-        self._http.expect("get", "/", content_json={'foo': 'bar'}, code=404)
+        self._http.expect("get", "/", content_json={"foo": "bar"}, code=404)
 
         try:
             yield self.tested.doGetRoot()
         except Exception as e:
-            self.assertEqual(str(e), '404: server did not succeed')
+            self.assertEqual(str(e), "404: server did not succeed")

@@ -48,15 +48,24 @@ class RunProcessPP(protocol.ProcessProtocol):
 
 
 class RunProcess:
-
     TIMEOUT_KILL = 5
     interrupt_signal = "KILL"
 
-    def __init__(self, reactor, command, workdir=None, env=None,
-                 collect_stdout=True, collect_stderr=True, stderr_is_error=False,
-                 io_timeout=300, runtime_timeout=3600, sigterm_timeout=5, initial_stdin=None,
-                 use_pty=False):
-
+    def __init__(
+        self,
+        reactor,
+        command,
+        workdir=None,
+        env=None,
+        collect_stdout=True,
+        collect_stderr=True,
+        stderr_is_error=False,
+        io_timeout=300,
+        runtime_timeout=3600,
+        sigterm_timeout=5,
+        initial_stdin=None,
+        use_pty=False,
+    ):
         self._reactor = reactor
         self.command = command
 
@@ -139,19 +148,24 @@ class RunProcess:
         # $PWD usually indicates the current directory; spawnProcess may not
         # update this value, though, so we set it explicitly here.  This causes
         # weird problems (bug #456) on msys
-        if not environ.get('MACHTYPE', None) == 'i686-pc-msys' and self.workdir is not None:
-            environ['PWD'] = os.path.abspath(self.workdir)
+        if (
+            not environ.get("MACHTYPE", None) == "i686-pc-msys"
+            and self.workdir is not None
+        ):
+            environ["PWD"] = os.path.abspath(self.workdir)
 
         argv = unicode2bytes(self.command)
-        self.process = self._reactor.spawnProcess(self.pp, argv[0], argv, environ, self.workdir,
-                                                  usePTY=self.use_pty)
+        self.process = self._reactor.spawnProcess(
+            self.pp, argv[0], argv, environ, self.workdir, usePTY=self.use_pty
+        )
 
         if self.io_timeout:
             self.io_timer = self._reactor.callLater(self.io_timeout, self.io_timed_out)
 
         if self.runtime_timeout:
-            self.runtime_timer = self._reactor.callLater(self.runtime_timeout,
-                                                         self.runtime_timed_out)
+            self.runtime_timer = self._reactor.callLater(
+                self.runtime_timeout, self.runtime_timed_out
+            )
 
     def add_stdout(self, data):
         if self.consumer_stdout is not None:
@@ -165,7 +179,7 @@ class RunProcess:
             self.consumer_stderr(data)
 
         if self.stderr_is_error:
-            self.kill('command produced stderr which is interpreted as error')
+            self.kill("command produced stderr which is interpreted as error")
 
         if self.io_timer:
             self.io_timer.reset(self.io_timeout)
@@ -187,7 +201,7 @@ class RunProcess:
             log.msg("process was killed, but exited with status 0; faking a failure")
 
             # windows returns '1' even for signalled failures, while POSIX returns -1
-            if runtime.platformType == 'win32':
+            if runtime.platformType == "win32":
                 rc = 1
             else:
                 rc = -1
@@ -233,7 +247,6 @@ class RunProcess:
         return False
 
     def check_process_was_killed(self):
-
         self.sigterm_timer = None
         if not self.is_dead():
             if not self.send_signal(self.interrupt_signal):
@@ -251,12 +264,14 @@ class RunProcess:
         if self.deferred:
             # finished ought to be called momentarily. Just in case it doesn't,
             # set a timer which will abandon the command.
-            self.kill_timer = self._reactor.callLater(self.TIMEOUT_KILL, self.kill_timed_out)
+            self.kill_timer = self._reactor.callLater(
+                self.TIMEOUT_KILL, self.kill_timed_out
+            )
 
     def send_signal(self, interrupt_signal):
         success = False
 
-        log.msg(f'{self}: killing process using {interrupt_signal}')
+        log.msg(f"{self}: killing process using {interrupt_signal}")
 
         if runtime.platformType == "win32":
             pid = self.process.pid
@@ -297,15 +312,16 @@ class RunProcess:
         return success
 
     def kill(self, msg):
-        log.msg(f'{self}: killing process because {msg}')
+        log.msg(f"{self}: killing process because {msg}")
         self._cancel_timers()
 
         self.killed = True
 
         if self.sigterm_timeout is not None:
             self.send_signal("TERM")
-            self.sigterm_timer = self._reactor.callLater(self.sigterm_timeout,
-                                                         self.check_process_was_killed)
+            self.sigterm_timer = self._reactor.callLater(
+                self.sigterm_timeout, self.check_process_was_killed
+            )
         else:
             if not self.send_signal(self.interrupt_signal):
                 log.msg(f"{self}: failed to kill process")
@@ -319,7 +335,7 @@ class RunProcess:
         self.failed(RuntimeError(f"SIG{self.interrupt_signal} failed to kill process"))
 
     def _cancel_timers(self):
-        for name in ('io_timer', 'kill_timer', 'runtime_timer', 'sigterm_timer'):
+        for name in ("io_timer", "kill_timer", "runtime_timer", "sigterm_timer"):
             timer = getattr(self, name, None)
             if timer:
                 timer.cancel()

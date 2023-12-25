@@ -43,18 +43,16 @@ from buildbot.www import resource
 
 
 class AuthRootResource(resource.Resource):
-
     def getChild(self, path, request):
         # return dynamically generated resources
-        if path == b'login':
+        if path == b"login":
             return self.master.www.auth.getLoginResource()
-        elif path == b'logout':
+        elif path == b"logout":
             return self.master.www.auth.getLogoutResource()
         return super().getChild(path, request)
 
 
 class AuthBase(config.ConfiguredMixin):
-
     def __init__(self, userInfoProvider=None):
         self.userInfoProvider = userInfoProvider
 
@@ -74,23 +72,24 @@ class AuthBase(config.ConfiguredMixin):
     def updateUserInfo(self, request):
         session = request.getSession()
         if self.userInfoProvider is not None:
-            infos = yield self.userInfoProvider.getUserInfo(session.user_info['username'])
+            infos = yield self.userInfoProvider.getUserInfo(
+                session.user_info["username"]
+            )
             session.user_info.update(infos)
             session.updateSession(request)
 
     def getConfigDict(self):
-        return {'name': type(self).__name__}
+        return {"name": type(self).__name__}
 
 
 class UserInfoProviderBase(config.ConfiguredMixin):
     name = "noinfo"
 
     def getUserInfo(self, username):
-        return defer.succeed({'email': username})
+        return defer.succeed({"email": username})
 
 
 class LoginResource(resource.Resource):
-
     def render_GET(self, request):
         return self.asyncRenderHelper(request, self.renderLogin)
 
@@ -105,7 +104,7 @@ class NoAuth(AuthBase):
 
 class RemoteUserAuth(AuthBase):
     header = b"REMOTE_USER"
-    headerRegex = re.compile(br"(?P<username>[^ @]+)@(?P<realm>[^ @]+)")
+    headerRegex = re.compile(rb"(?P<username>[^ @]+)@(?P<realm>[^ @]+)")
 
     def __init__(self, header=None, headerRegex=None, **kwargs):
         super().__init__(**kwargs)
@@ -120,21 +119,31 @@ class RemoteUserAuth(AuthBase):
         current_version = parse_version(twisted.__version__)
         if current_version < parse_version("22.10.0"):
             from twisted.web.resource import ForbiddenResource
+
             return ForbiddenResource(message="URL is not supported for authentication")
 
         from twisted.web.pages import forbidden
+
         return forbidden(message="URL is not supported for authentication")
 
     @defer.inlineCallbacks
     def maybeAutoLogin(self, request):
         header = request.getHeader(self.header)
         if header is None:
-            msg = b"missing http header " + self.header + b". Check your reverse proxy config!"
+            msg = (
+                b"missing http header "
+                + self.header
+                + b". Check your reverse proxy config!"
+            )
             raise Error(403, msg)
         res = self.headerRegex.match(header)
         if res is None:
-            msg = b'http header does not match regex! "' + header + b'" not matching ' + \
-                    self.headerRegex.pattern
+            msg = (
+                b'http header does not match regex! "'
+                + header
+                + b'" not matching '
+                + self.headerRegex.pattern
+            )
             raise Error(403, msg)
         session = request.getSession()
         user_info = {k: bytes2unicode(v) for k, v in res.groupdict().items()}
@@ -145,21 +154,21 @@ class RemoteUserAuth(AuthBase):
 
 @implementer(IRealm)
 class AuthRealm:
-
     def __init__(self, master, auth):
         self.auth = auth
         self.master = master
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         if IResource in interfaces:
-            return (IResource,
-                    PreAuthenticatedLoginResource(self.master, avatarId),
-                    lambda: None)
+            return (
+                IResource,
+                PreAuthenticatedLoginResource(self.master, avatarId),
+                lambda: None,
+            )
         raise NotImplementedError()
 
 
 class TwistedICredAuthBase(AuthBase):
-
     def __init__(self, credentialFactories, checkers, **kwargs):
         super().__init__(**kwargs)
         if self.userInfoProvider is None:
@@ -170,29 +179,36 @@ class TwistedICredAuthBase(AuthBase):
     def getLoginResource(self):
         return HTTPAuthSessionWrapper(
             Portal(AuthRealm(self.master, self), self.checkers),
-            self.credentialFactories)
+            self.credentialFactories,
+        )
 
 
 class HTPasswdAuth(TwistedICredAuthBase):
-
     def __init__(self, passwdFile, **kwargs):
-        super().__init__([DigestCredentialFactory(b"MD5", b"buildbot"),
-             BasicCredentialFactory(b"buildbot")],
+        super().__init__(
+            [
+                DigestCredentialFactory(b"MD5", b"buildbot"),
+                BasicCredentialFactory(b"buildbot"),
+            ],
             [FilePasswordDB(passwdFile)],
-            **kwargs)
+            **kwargs,
+        )
 
 
 class UserPasswordAuth(TwistedICredAuthBase):
-
     def __init__(self, users, **kwargs):
         if isinstance(users, dict):
             users = {user: unicode2bytes(pw) for user, pw in users.items()}
         elif isinstance(users, list):
             users = [(user, unicode2bytes(pw)) for user, pw in users]
-        super().__init__([DigestCredentialFactory(b"MD5", b"buildbot"),
-             BasicCredentialFactory(b"buildbot")],
+        super().__init__(
+            [
+                DigestCredentialFactory(b"MD5", b"buildbot"),
+                BasicCredentialFactory(b"buildbot"),
+            ],
             [InMemoryUsernamePasswordDatabaseDontUse(**dict(users))],
-            **kwargs)
+            **kwargs,
+        )
 
 
 @implementer(ICredentialsChecker)
@@ -201,9 +217,7 @@ class CustomAuth(TwistedICredAuthBase):
     credentialInterfaces = [IUsernamePassword]
 
     def __init__(self, **kwargs):
-        super().__init__([BasicCredentialFactory(b"buildbot")],
-            [self],
-            **kwargs)
+        super().__init__([BasicCredentialFactory(b"buildbot")], [self], **kwargs)
 
     def requestAvatarId(self, cred):
         if self.check_credentials(cred.username, cred.password):
@@ -238,10 +252,9 @@ class PreAuthenticatedLoginResource(LoginResource):
 
 
 class LogoutResource(resource.Resource):
-
     def render_GET(self, request):
         session = request.getSession()
         session.expire()
         session.updateSession(request)
         request.redirect(_redirect(self.master, request).url)
-        return b''
+        return b""

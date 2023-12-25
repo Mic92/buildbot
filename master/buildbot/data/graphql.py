@@ -50,6 +50,7 @@ class GraphQLConnector(service.AsyncService):
     be transformed with as_deferred, and they should themselves transform normal data api results
     with as_future()
     """
+
     data = None
     asyncio_loop = None
 
@@ -60,7 +61,7 @@ class GraphQLConnector(service.AsyncService):
     def reconfigServiceWithBuildbotConfig(self, new_config):
         if self.data is None:
             self.data = self.master.data
-        config = new_config.www.get('graphql')
+        config = new_config.www.get("graphql")
         self.enabled = False
         if config is None:
             return
@@ -96,7 +97,9 @@ class GraphQLConnector(service.AsyncService):
             # get_event_loop throws is there's no current loop and we're not on main thread.
             pass
 
-        if self._saved_event_loop is None and not isinstance(loop, AsyncIOLoopWithTwisted):
+        if self._saved_event_loop is None and not isinstance(
+            loop, AsyncIOLoopWithTwisted
+        ):
             self._saved_event_loop = loop
             self.asyncio_loop = AsyncIOLoopWithTwisted(self.master.reactor)
             asyncio.set_event_loop(self.asyncio_loop)
@@ -165,7 +168,7 @@ class GraphQLConnector(service.AsyncService):
             for field, field_type in sorted(rtype.entityType.fields.items()):
                 # in graphql, we handle properties as queriable sub resources
                 # instead of hardcoded attributes like in rest api
-                if field == 'properties':
+                if field == "properties":
                     continue
                 field_type_graphql = field_type.getGraphQLInputType()
                 if field_type_graphql is None:
@@ -175,7 +178,8 @@ class GraphQLConnector(service.AsyncService):
                     if op in ["in", "notin"]:
                         if field_type_graphql in ["String", "Int"]:
                             query_fields.append(
-                                f"{field}__{op}: [{field_type_graphql}]")
+                                f"{field}__{op}: [{field_type_graphql}]"
+                            )
                     else:
                         query_fields.append(f"{field}__{op}: {field_type_graphql}")
 
@@ -185,15 +189,15 @@ class GraphQLConnector(service.AsyncService):
                 plural_typespec = f"[{typename}]"
             else:
                 plural_typespec = typename
-            queries_schema += (
-                f"  {rtype.plural}{format_query_fields(query_fields)}: {plural_typespec}!\n"
-            )
+            queries_schema += f"  {rtype.plural}{format_query_fields(query_fields)}: {plural_typespec}!\n"
 
             # build the queriable parameter, via keyField
             keyfields = []
             field = rtype.keyField
             if field not in rtype.entityType.fields:
-                raise RuntimeError(f"bad keyField {field} not in entityType {rtype.entityType}")
+                raise RuntimeError(
+                    f"bad keyField {field} not in entityType {rtype.entityType}"
+                )
             field_type = rtype.entityType.fields[field]
             field_type_graphql = field_type.toGraphQLTypeName()
             keyfields.append(f"{field}: {field_type_graphql}")
@@ -250,7 +254,9 @@ class GraphQLConnector(service.AsyncService):
                 if isinstance(res, list) and args:
                     ep = self.data.getEndPointForResourceName(field)
                     args = {k: _enforce_list(v) for k, v in args.items()}
-                    rspec = self.data.resultspec_from_jsonapi(args, ep.rtype.entityType, True)
+                    rspec = self.data.resultspec_from_jsonapi(
+                        args, ep.rtype.entityType, True
+                    )
                     res = rspec.apply(res)
                 return res
             ep = self.data.getEndPointForResourceName(field)
@@ -259,7 +265,9 @@ class GraphQLConnector(service.AsyncService):
 
             if ep.kind == EndpointKind.COLLECTION or ep.isPseudoCollection:
                 args = {k: _enforce_list(v) for k, v in args.items()}
-                rspec = self.data.resultspec_from_jsonapi(args, ep.rtype.entityType, True)
+                rspec = self.data.resultspec_from_jsonapi(
+                    args, ep.rtype.entityType, True
+                )
 
             return await self._aio_ep_get(ep, kwargs, rspec)
 

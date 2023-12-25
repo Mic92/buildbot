@@ -20,7 +20,6 @@ from buildbot.util import service
 
 
 class FakePBManager(service.AsyncMultiService):
-
     def __init__(self):
         super().__init__()
         self.setName("fake-pbmanager")
@@ -33,7 +32,9 @@ class FakePBManager(service.AsyncMultiService):
             self._registrations.append((portstr, username, password))
             return defer.succeed(reg)
         else:
-            raise KeyError(f"username '{username}' is already registered on port {portstr}")
+            raise KeyError(
+                f"username '{username}' is already registered on port {portstr}"
+            )
 
     def _unregister(self, portstr, username):
         self._unregistrations.append((portstr, username))
@@ -41,7 +42,6 @@ class FakePBManager(service.AsyncMultiService):
 
 
 class FakeRegistration:
-
     def __init__(self, pbmanager, portstr, username):
         self._portstr = portstr
         self._username = username

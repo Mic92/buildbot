@@ -36,17 +36,19 @@ def get_environment_versions():
 
     from buildbot import version as bbversion  # pylint: disable=import-outside-toplevel
 
-    pyversion = '.'.join(map(str, sys.version_info[:3]))
+    pyversion = ".".join(map(str, sys.version_info[:3]))
 
-    tx_version_info = (twisted.version.major,
-                       twisted.version.minor,
-                       twisted.version.micro)
-    txversion = '.'.join(map(str, tx_version_info))
+    tx_version_info = (
+        twisted.version.major,
+        twisted.version.minor,
+        twisted.version.micro,
+    )
+    txversion = ".".join(map(str, tx_version_info))
 
     return [
-        ('Python', pyversion),
-        ('Buildbot', bbversion),
-        ('Twisted', txversion),
+        ("Python", pyversion),
+        ("Buildbot", bbversion),
+        ("Twisted", txversion),
     ]
 
 
@@ -55,34 +57,33 @@ def get_www_frontend_config_dict(master, www_config):
     config = dict(www_config)
 
     # base_react is not a real plugin, so don't send it to frontend
-    if 'plugins' in config and 'base_react' in config['plugins']:
-        config['plugins'] = dict(config['plugins'])
-        del config['plugins']['base_react']
+    if "plugins" in config and "base_react" in config["plugins"]:
+        config["plugins"] = dict(config["plugins"])
+        del config["plugins"]["base_react"]
 
     versions = get_environment_versions()
-    vs = config.get('versions')
+    vs = config.get("versions")
     if isinstance(vs, list):
         versions += vs
-    config['versions'] = versions
+    config["versions"] = versions
 
-    config['buildbotURL'] = master.config.buildbotURL
-    config['title'] = master.config.title
-    config['titleURL'] = master.config.titleURL
-    config['multiMaster'] = master.config.multiMaster
+    config["buildbotURL"] = master.config.buildbotURL
+    config["title"] = master.config.title
+    config["titleURL"] = master.config.titleURL
+    config["multiMaster"] = master.config.multiMaster
 
     # delete things that may contain secrets
-    if 'change_hook_dialects' in config:
-        del config['change_hook_dialects']
+    if "change_hook_dialects" in config:
+        del config["change_hook_dialects"]
 
     # delete things that may contain information about the serving host
-    if 'custom_templates_dir' in config:
-        del config['custom_templates_dir']
+    if "custom_templates_dir" in config:
+        del config["custom_templates_dir"]
 
     return config
 
 
 def serialize_www_frontend_config_dict_to_json(config):
-
     def to_json(obj):
         obj = IConfigured(obj).getConfigDict()
         if isinstance(obj, dict):
@@ -111,12 +112,14 @@ _known_theme_variables = (
 
 
 def serialize_www_frontend_theme_to_css(config, indent):
-    theme_config = config.get('theme', {})
+    theme_config = config.get("theme", {})
 
-    return ('\n' + ' ' * indent).join([
-        f'--{name}: {theme_config.get(name, default)};'
-        for name, default in _known_theme_variables
-    ])
+    return ("\n" + " " * indent).join(
+        [
+            f"--{name}: {theme_config.get(name, default)};"
+            for name, default in _known_theme_variables
+        ]
+    )
 
 
 def replace_placeholder_range(string, start, end, replacement):
@@ -125,7 +128,7 @@ def replace_placeholder_range(string, start, end, replacement):
     i2 = string.find(end)
     if i1 < 0 or i2 < 0:
         return string
-    return string[0:i1] + replacement + string[i2 + len(end):]
+    return string[0:i1] + replacement + string[i2 + len(end) :]
 
 
 class ConfigResource(resource.Resource):
@@ -139,14 +142,16 @@ class ConfigResource(resource.Resource):
 
     def do_render(self, request):
         config = {}
-        request.setHeader(b"content-type", b'application/json')
+        request.setHeader(b"content-type", b"application/json")
         request.setHeader(b"Cache-Control", b"public,max-age=0")
 
         config.update(self.frontend_config)
         config.update({"user": self.master.www.getUserInfos(request)})
 
         return defer.succeed(
-            unicode2bytes(serialize_www_frontend_config_dict_to_json(config), encoding='ascii')
+            unicode2bytes(
+                serialize_www_frontend_config_dict_to_json(config), encoding="ascii"
+            )
         )
 
 
@@ -157,15 +162,14 @@ class IndexResource(resource.Resource):
     def __init__(self, master, staticdir):
         super().__init__(master)
         loader = jinja2.FileSystemLoader(staticdir)
-        self.jinja = jinja2.Environment(
-            loader=loader, undefined=jinja2.StrictUndefined)
+        self.jinja = jinja2.Environment(loader=loader, undefined=jinja2.StrictUndefined)
 
     def reconfigResource(self, new_config):
         self.config = new_config.www
         self.frontend_config = get_www_frontend_config_dict(self.master, self.config)
 
         self.custom_templates = {}
-        template_dir = self.config.get('custom_templates_dir', None)
+        template_dir = self.config.get("custom_templates_dir", None)
         if template_dir is not None:
             template_dir = os.path.join(self.master.basedir, template_dir)
             self.custom_templates = self.parseCustomTemplateDir(template_dir)
@@ -178,6 +182,7 @@ class IndexResource(resource.Resource):
         allowed_ext = [".html"]
         try:
             import pypugjs  # pylint: disable=import-outside-toplevel
+
             allowed_ext.append(".jade")
         except ImportError:  # pragma: no cover
             log.msg(f"pypugjs not installed. Ignoring .jade files from {template_dir}")
@@ -189,22 +194,22 @@ class IndexResource(resource.Resource):
                 # template_name is a url, so we really want '/'
                 # root is a os.path, though
                 template_name = posixpath.join(
-                    os.path.basename(root), "views", "%s.html")
+                    os.path.basename(root), "views", "%s.html"
+                )
             for f in files:
                 fn = os.path.join(root, f)
                 basename, ext = os.path.splitext(f)
                 if ext not in allowed_ext:
                     continue
                 if ext == ".html":
-                    with open(fn, encoding='utf-8') as f:
+                    with open(fn, encoding="utf-8") as f:
                         html = f.read().strip()
                 elif ext == ".jade":
-                    with open(fn, encoding='utf-8') as f:
+                    with open(fn, encoding="utf-8") as f:
                         jade = f.read()
                         parser = pypugjs.parser.Parser(jade)
                         block = parser.parse()
-                        compiler = pypugjs.ext.html.Compiler(
-                            block, pretty=False)
+                        compiler = pypugjs.ext.html.Compiler(block, pretty=False)
                         html = compiler.compile()
                 res[template_name % (basename,)] = html
 
@@ -213,25 +218,27 @@ class IndexResource(resource.Resource):
     @defer.inlineCallbacks
     def renderIndex(self, request):
         config = {}
-        request.setHeader(b"content-type", b'text/html')
+        request.setHeader(b"content-type", b"text/html")
         request.setHeader(b"Cache-Control", b"public,max-age=0")
 
         try:
-            yield self.config['auth'].maybeAutoLogin(request)
+            yield self.config["auth"].maybeAutoLogin(request)
         except Error as e:
             config["on_load_warning"] = e.message
 
         config.update(self.frontend_config)
         config.update({"user": self.master.www.getUserInfos(request)})
 
-        tpl = self.jinja.get_template('index.html')
+        tpl = self.jinja.get_template("index.html")
         # we use Jinja in order to render some server side dynamic stuff
         # For example, custom_templates javascript is generated by the
         # layout.jade jinja template
-        tpl = tpl.render(configjson=serialize_www_frontend_config_dict_to_json(config),
-                         custom_templates=self.custom_templates,
-                         config=self.config)
-        return unicode2bytes(tpl, encoding='ascii')
+        tpl = tpl.render(
+            configjson=serialize_www_frontend_config_dict_to_json(config),
+            custom_templates=self.custom_templates,
+            config=self.config,
+        )
+        return unicode2bytes(tpl, encoding="ascii")
 
 
 class IndexResourceReact(resource.Resource):
@@ -241,7 +248,7 @@ class IndexResourceReact(resource.Resource):
     def __init__(self, master, staticdir):
         super().__init__(master)
         self.static_dir = staticdir
-        with open(os.path.join(self.static_dir, 'index.html')) as index_f:
+        with open(os.path.join(self.static_dir, "index.html")) as index_f:
             self.index_template = index_f.read()
 
     def reconfigResource(self, new_config):
@@ -254,11 +261,11 @@ class IndexResourceReact(resource.Resource):
     @defer.inlineCallbacks
     def renderIndex(self, request):
         config = {}
-        request.setHeader(b"content-type", b'text/html')
+        request.setHeader(b"content-type", b"text/html")
         request.setHeader(b"Cache-Control", b"public,max-age=0")
 
         try:
-            yield self.config['auth'].maybeAutoLogin(request)
+            yield self.config["auth"].maybeAutoLogin(request)
         except Error as e:
             config["on_load_warning"] = e.message
 
@@ -268,21 +275,21 @@ class IndexResourceReact(resource.Resource):
         serialized_config = serialize_www_frontend_config_dict_to_json(config)
         serialized_css = serialize_www_frontend_theme_to_css(config, indent=8)
         rendered_index = self.index_template.replace(
-            ' <!-- BUILDBOT_CONFIG_PLACEHOLDER -->',
-            f'''<script id="bb-config">
+            " <!-- BUILDBOT_CONFIG_PLACEHOLDER -->",
+            f"""<script id="bb-config">
     window.buildbotFrontendConfig = {serialized_config};
-</script>'''
+</script>""",
         )
 
         rendered_index = replace_placeholder_range(
             rendered_index,
-            '<!-- BUILDBOT_THEME_CSS_PLACEHOLDER_BEGIN -->',
-            '<!-- BUILDBOT_THEME_CSS_PLACEHOLDER_END -->',
-            f'''<style>
+            "<!-- BUILDBOT_THEME_CSS_PLACEHOLDER_BEGIN -->",
+            "<!-- BUILDBOT_THEME_CSS_PLACEHOLDER_END -->",
+            f"""<style>
       :root {{
         {serialized_css}
       }}
-    </style>''',
+    </style>""",
         )
 
-        return unicode2bytes(rendered_index, encoding='ascii')
+        return unicode2bytes(rendered_index, encoding="ascii")

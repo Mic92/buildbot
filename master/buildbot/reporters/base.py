@@ -23,14 +23,14 @@ from buildbot.reporters import utils
 from buildbot.util import service
 from buildbot.util import tuplematch
 
-ENCODING = 'utf-8'
+ENCODING = "utf-8"
 
 
 class ReporterBase(service.BuildbotService):
     name = None
     __meta__ = abc.ABCMeta
 
-    compare_attrs = ['generators']
+    compare_attrs = ["generators"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -40,7 +40,7 @@ class ReporterBase(service.BuildbotService):
 
     def checkConfig(self, generators):
         if not isinstance(generators, list):
-            config.error('{}: generators argument must be a list')
+            config.error("{}: generators argument must be a list")
 
         for g in generators:
             g.check()
@@ -67,8 +67,9 @@ class ReporterBase(service.BuildbotService):
         # Add consumers for new keys
         for key in sorted(list(wanted_event_keys)):
             if key not in self._event_consumers:
-                self._event_consumers[key] = \
-                    yield self.master.mq.startConsuming(self._got_event, key)
+                self._event_consumers[key] = yield self.master.mq.startConsuming(
+                    self._got_event, key
+                )
 
     @defer.inlineCallbacks
     def stopService(self):
@@ -116,7 +117,7 @@ class ReporterBase(service.BuildbotService):
             if reports:
                 yield self.sendMessage(reports)
         except Exception as e:
-            log.err(e, 'Got exception when handling reporter events')
+            log.err(e, "Got exception when handling reporter events")
 
         if chain_key is not None:
             if self._pending_got_event_calls.get(chain_key) == d:

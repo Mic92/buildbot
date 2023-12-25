@@ -22,7 +22,6 @@ from buildbot.config.errors import error
 
 
 class Project(util.ComparableMixin):
-
     compare_attrs = (
         "name",
         "slug",
@@ -36,14 +35,17 @@ class Project(util.ComparableMixin):
 
         self.name = check_param_str(name, self.__class__, "name")
         self.slug = check_param_str(slug, self.__class__, "slug")
-        self.description = check_param_str_none(description, self.__class__, "description")
-        self.description_format = \
-            check_param_str_none(description_format, self.__class__, "description_format")
+        self.description = check_param_str_none(
+            description, self.__class__, "description"
+        )
+        self.description_format = check_param_str_none(
+            description_format, self.__class__, "description_format"
+        )
         if self.description_format is None:
             pass
         elif self.description_format == "markdown":
             if not check_markdown_support(self.__class__):  # pragma: no cover
                 self.description_format = None
         else:
-            error("project description format must be None or \"markdown\"")
+            error('project description format must be None or "markdown"')
             self.description_format = None

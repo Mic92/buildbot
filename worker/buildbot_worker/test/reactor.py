@@ -27,14 +27,16 @@ class TestReactorMixin(object):
     Mix this in to get TestReactor as self.reactor which is correctly cleaned up
     at the end
     """
-    def setup_test_reactor(self):
 
-        self.patch(threadpool, 'ThreadPool', NonThreadPool)
+    def setup_test_reactor(self):
+        self.patch(threadpool, "ThreadPool", NonThreadPool)
         self.reactor = TestReactor()
 
         def deferToThread(f, *args, **kwargs):
-            return threads.deferToThreadPool(self.reactor, self.reactor.getThreadPool(),
-                                             f, *args, **kwargs)
-        self.patch(threads, 'deferToThread', deferToThread)
+            return threads.deferToThreadPool(
+                self.reactor, self.reactor.getThreadPool(), f, *args, **kwargs
+            )
+
+        self.patch(threads, "deferToThread", deferToThread)
 
         self.addCleanup(self.reactor.stop)

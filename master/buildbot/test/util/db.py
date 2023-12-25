@@ -32,12 +32,15 @@ from buildbot.util.sautils import withoutSqliteForeignKeys
 
 def skip_for_dialect(dialect):
     """Decorator to skip a test for a particular SQLAlchemy dialect."""
+
     def dec(fn):
         def wrap(self, *args, **kwargs):
             if self.db_engine.dialect.name == dialect:
                 raise unittest.SkipTest(f"Not supported on dialect '{dialect}'")
             return fn(self, *args, **kwargs)
+
         return wrap
+
     return dec
 
 
@@ -61,13 +64,13 @@ def resolve_test_index_in_db_url(db_url):
     if "{TEST_ID}" in db_url:
         return db_url.replace("{TEST_ID}", str(test_id or 0))
 
-    if db_url == 'sqlite://':
+    if db_url == "sqlite://":
         return db_url
 
     if test_id is not None and test_id is not False:
-        if db_url.startswith('sqlite:///'):
+        if db_url.startswith("sqlite:///"):
             # Relative DB URLs in the test directory are fine.
-            path = db_url[len('sqlite:///'):]
+            path = db_url[len("sqlite:///") :]
             if not os.path.relpath(path).startswith(".."):
                 return db_url
 
@@ -165,7 +168,10 @@ class RealDatabaseMixin:
 
             # List of reference links (table_name, ref_table_name) that
             # should be broken by adding use_alter=True.
-            table_referenced_table_links = [('buildsets', 'builds'), ('builds', 'buildrequests')]
+            table_referenced_table_links = [
+                ("buildsets", "builds"),
+                ("builds", "buildrequests"),
+            ]
             for table_name, ref_table_name in table_referenced_table_links:
                 if table_name in meta.tables:
                     table = meta.tables[table_name]
@@ -183,9 +189,8 @@ class RealDatabaseMixin:
         except Exception:
             # sometimes this goes badly wrong; being able to see the schema
             # can be a big help
-            if conn.engine.dialect.name == 'sqlite':
-                r = conn.execute("select sql from sqlite_master "
-                                 "where type='table'")
+            if conn.engine.dialect.name == "sqlite":
+                r = conn.execute("select sql from sqlite_master " "where type='table'")
                 log.msg("Current schema:")
                 for row in r.fetchall():
                     log.msg(row.sql)
@@ -193,17 +198,18 @@ class RealDatabaseMixin:
 
     def __thd_create_tables(self, conn, table_names):
         table_names_set = set(table_names)
-        tables = [t for t in model.Model.metadata.tables.values()
-                  if t.name in table_names_set]
+        tables = [
+            t for t in model.Model.metadata.tables.values() if t.name in table_names_set
+        ]
         # Create tables using create_all() method. This way not only tables
         # and direct indices are created, but also deferred references
         # (that use use_alter=True in definition).
-        model.Model.metadata.create_all(
-            bind=conn, tables=tables, checkfirst=True)
+        model.Model.metadata.create_all(bind=conn, tables=tables, checkfirst=True)
 
     @defer.inlineCallbacks
-    def setUpRealDatabase(self, table_names=None, basedir='basedir',
-                          want_pool=True, sqlite_memory=True):
+    def setUpRealDatabase(
+        self, table_names=None, basedir="basedir", want_pool=True, sqlite_memory=True
+    ):
         """
 
         Set up a database.  Ordinarily sets up an engine and a pool and takes
@@ -221,8 +227,8 @@ class RealDatabaseMixin:
             table_names = []
         self.__want_pool = want_pool
 
-        default_sqlite = 'sqlite://'
-        self.db_url = os.environ.get('BUILDBOT_TEST_DB_URL', default_sqlite)
+        default_sqlite = "sqlite://"
+        self.db_url = os.environ.get("BUILDBOT_TEST_DB_URL", default_sqlite)
         if not sqlite_memory and self.db_url == default_sqlite:
             self.db_url = "sqlite:///tmp.sqlite"
 
@@ -232,8 +238,7 @@ class RealDatabaseMixin:
             os.makedirs(basedir)
 
         self.basedir = basedir
-        self.db_engine = enginestrategy.create_engine(self.db_url,
-                                                      basedir=basedir)
+        self.db_engine = enginestrategy.create_engine(self.db_url, basedir=basedir)
         # if the caller does not want a pool, we're done.
         if not want_pool:
             return None
@@ -262,8 +267,9 @@ class RealDatabaseMixin:
         """
         # sort the tables by dependency
         all_table_names = {row.table for row in rows}
-        ordered_tables = [t for t in model.Model.metadata.sorted_tables
-                          if t.name in all_table_names]
+        ordered_tables = [
+            t for t in model.Model.metadata.sorted_tables if t.name in all_table_names
+        ]
 
         def thd(conn):
             # insert into tables -- in order
@@ -275,6 +281,7 @@ class RealDatabaseMixin:
                     except Exception:
                         log.msg(f"while inserting {row} - {row.values}")
                         raise
+
         yield self.db_pool.do(thd)
 
 
@@ -282,10 +289,16 @@ class RealDatabaseWithConnectorMixin(RealDatabaseMixin):
     # Same as RealDatabaseMixin, except that a real DBConnector is also setup in a correct way.
 
     @defer.inlineCallbacks
-    def setUpRealDatabaseWithConnector(self, master, table_names=None, basedir='basedir',
-                                       want_pool=True, sqlite_memory=True):
+    def setUpRealDatabaseWithConnector(
+        self,
+        master,
+        table_names=None,
+        basedir="basedir",
+        want_pool=True,
+        sqlite_memory=True,
+    ):
         yield self.setUpRealDatabase(table_names, basedir, want_pool, sqlite_memory)
-        master.config.db['db_url'] = self.db_url
+        master.config.db["db_url"] = self.db_url
         master.db = DBConnector(self.basedir)
         yield master.db.setServiceParent(master)
         master.db.pool = self.db_pool
@@ -295,7 +308,6 @@ class RealDatabaseWithConnectorMixin(RealDatabaseMixin):
 
 
 class TestCase(unittest.TestCase):
-
     @defer.inlineCallbacks
     def assertFailure(self, d, excp):
         exception = None

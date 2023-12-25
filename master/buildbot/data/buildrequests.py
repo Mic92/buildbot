@@ -24,7 +24,6 @@ from buildbot.process.results import RETRY
 
 
 class Db2DataMixin:
-
     def _generate_filtered_properties(self, props, filters):
         """
         This method returns Build's properties according to property filters.
@@ -34,56 +33,60 @@ class Db2DataMixin:
         """
         # by default no properties are returned
         if props and filters:
-            return (props
-                    if '*' in filters
-                    else dict(((k, v) for k, v in props.items() if k in filters)))
+            return (
+                props
+                if "*" in filters
+                else dict(((k, v) for k, v in props.items() if k in filters))
+            )
         return None
 
     @defer.inlineCallbacks
     def addPropertiesToBuildRequest(self, buildrequest, filters):
         if not filters:
             return None
-        props = yield self.master.db.buildsets.getBuildsetProperties(buildrequest['buildsetid'])
+        props = yield self.master.db.buildsets.getBuildsetProperties(
+            buildrequest["buildsetid"]
+        )
         filtered_properties = self._generate_filtered_properties(props, filters)
         if filtered_properties:
-            buildrequest['properties'] = filtered_properties
+            buildrequest["properties"] = filtered_properties
         return None
 
     def db2data(self, dbdict):
         data = {
-            'buildrequestid': dbdict['buildrequestid'],
-            'buildsetid': dbdict['buildsetid'],
-            'builderid': dbdict['builderid'],
-            'priority': dbdict['priority'],
-            'claimed': dbdict['claimed'],
-            'claimed_at': dbdict['claimed_at'],
-            'claimed_by_masterid': dbdict['claimed_by_masterid'],
-            'complete': dbdict['complete'],
-            'results': dbdict['results'],
-            'submitted_at': dbdict['submitted_at'],
-            'complete_at': dbdict['complete_at'],
-            'waited_for': dbdict['waited_for'],
-            'properties': dbdict.get('properties'),
+            "buildrequestid": dbdict["buildrequestid"],
+            "buildsetid": dbdict["buildsetid"],
+            "builderid": dbdict["builderid"],
+            "priority": dbdict["priority"],
+            "claimed": dbdict["claimed"],
+            "claimed_at": dbdict["claimed_at"],
+            "claimed_by_masterid": dbdict["claimed_by_masterid"],
+            "complete": dbdict["complete"],
+            "results": dbdict["results"],
+            "submitted_at": dbdict["submitted_at"],
+            "complete_at": dbdict["complete_at"],
+            "waited_for": dbdict["waited_for"],
+            "properties": dbdict.get("properties"),
         }
         return defer.succeed(data)
+
     fieldMapping = {
-        'buildrequestid': 'buildrequests.id',
-        'buildsetid': 'buildrequests.buildsetid',
-        'builderid': 'buildrequests.builderid',
-        'priority': 'buildrequests.priority',
-        'complete': 'buildrequests.complete',
-        'results': 'buildrequests.results',
-        'submitted_at': 'buildrequests.submitted_at',
-        'complete_at': 'buildrequests.complete_at',
-        'waited_for': 'buildrequests.waited_for',
+        "buildrequestid": "buildrequests.id",
+        "buildsetid": "buildrequests.buildsetid",
+        "builderid": "buildrequests.builderid",
+        "priority": "buildrequests.priority",
+        "complete": "buildrequests.complete",
+        "results": "buildrequests.results",
+        "submitted_at": "buildrequests.submitted_at",
+        "complete_at": "buildrequests.complete_at",
+        "waited_for": "buildrequests.waited_for",
         # br claim
-        'claimed_at': 'buildrequest_claims.claimed_at',
-        'claimed_by_masterid': 'buildrequest_claims.masterid',
+        "claimed_at": "buildrequest_claims.claimed_at",
+        "claimed_by_masterid": "buildrequest_claims.masterid",
     }
 
 
 class BuildRequestEndpoint(Db2DataMixin, base.Endpoint):
-
     kind = base.EndpointKind.SINGLE
     pathPatterns = """
         /buildrequests/n:buildrequestid
@@ -91,10 +94,16 @@ class BuildRequestEndpoint(Db2DataMixin, base.Endpoint):
 
     @defer.inlineCallbacks
     def get(self, resultSpec, kwargs):
-        buildrequest = yield self.master.db.buildrequests.getBuildRequest(kwargs['buildrequestid'])
+        buildrequest = yield self.master.db.buildrequests.getBuildRequest(
+            kwargs["buildrequestid"]
+        )
 
         if buildrequest:
-            filters = resultSpec.popProperties() if hasattr(resultSpec, 'popProperties') else []
+            filters = (
+                resultSpec.popProperties()
+                if hasattr(resultSpec, "popProperties")
+                else []
+            )
             yield self.addPropertiesToBuildRequest(buildrequest, filters)
             return (yield self.db2data(buildrequest))
         return None
@@ -118,30 +127,31 @@ class BuildRequestEndpoint(Db2DataMixin, base.Endpoint):
             # Don't call the data API here, as the buildrequests might have been
             # taken by another master. We just send the stop message and forget
             # about those.
-            mqArgs = {'reason': args.get('reason', 'no reason')}
+            mqArgs = {"reason": args.get("reason", "no reason")}
             for b in builds:
-                self.master.mq.produce(("control", "builds", str(b['buildid']), "stop"),
-                                       mqArgs)
+                self.master.mq.produce(
+                    ("control", "builds", str(b["buildid"]), "stop"), mqArgs
+                )
             return None
 
         # then complete it with 'CANCELLED'; this is the closest we can get to
         # cancelling a request without running into trouble with dangling
         # references.
-        yield self.master.data.updates.completeBuildRequests([brid],
-                                                             results.CANCELLED)
+        yield self.master.data.updates.completeBuildRequests([brid], results.CANCELLED)
         brdict = yield self.master.db.buildrequests.getBuildRequest(brid)
-        self.master.mq.produce(('buildrequests', str(brid), 'cancel'), brdict)
+        self.master.mq.produce(("buildrequests", str(brid), "cancel"), brdict)
         return None
 
     def set_request_priority(self, brid, args, kwargs):
-        priority = args['priority']
+        priority = args["priority"]
         yield self.master.db.buildrequests.set_build_requests_priority(
-                 brids=[brid], priority=priority)
+            brids=[brid], priority=priority
+        )
         return None
 
     @defer.inlineCallbacks
     def control(self, action, args, kwargs):
-        brid = kwargs['buildrequestid']
+        brid = kwargs["buildrequestid"]
         if action == "cancel":
             return self.cancel_request(brid, args, kwargs)
         elif action == "set_priority":
@@ -151,38 +161,39 @@ class BuildRequestEndpoint(Db2DataMixin, base.Endpoint):
 
 
 class BuildRequestsEndpoint(Db2DataMixin, base.Endpoint):
-
     kind = base.EndpointKind.COLLECTION
     pathPatterns = """
         /buildrequests
         /builders/n:builderid/buildrequests
     """
-    rootLinkName = 'buildrequests'
+    rootLinkName = "buildrequests"
 
     @defer.inlineCallbacks
     def get(self, resultSpec, kwargs):
         builderid = kwargs.get("builderid", None)
-        complete = resultSpec.popBooleanFilter('complete')
-        claimed_by_masterid = resultSpec.popBooleanFilter(
-            'claimed_by_masterid')
+        complete = resultSpec.popBooleanFilter("complete")
+        claimed_by_masterid = resultSpec.popBooleanFilter("claimed_by_masterid")
         if claimed_by_masterid:
             # claimed_by_masterid takes precedence over 'claimed' filter
             # (no need to check consistency with 'claimed' filter even if
             # 'claimed'=False with 'claimed_by_masterid' set, doesn't make sense)
             claimed = claimed_by_masterid
         else:
-            claimed = resultSpec.popBooleanFilter('claimed')
+            claimed = resultSpec.popBooleanFilter("claimed")
 
-        bsid = resultSpec.popOneFilter('buildsetid', 'eq')
+        bsid = resultSpec.popOneFilter("buildsetid", "eq")
         resultSpec.fieldMapping = self.fieldMapping
         buildrequests = yield self.master.db.buildrequests.getBuildRequests(
             builderid=builderid,
             complete=complete,
             claimed=claimed,
             bsid=bsid,
-            resultSpec=resultSpec)
+            resultSpec=resultSpec,
+        )
         results = []
-        filters = resultSpec.popProperties() if hasattr(resultSpec, 'popProperties') else []
+        filters = (
+            resultSpec.popProperties() if hasattr(resultSpec, "popProperties") else []
+        )
         for br in buildrequests:
             yield self.addPropertiesToBuildRequest(br, filters)
             results.append((yield self.db2data(br)))
@@ -190,11 +201,10 @@ class BuildRequestsEndpoint(Db2DataMixin, base.Endpoint):
 
 
 class BuildRequest(base.ResourceType):
-
     name = "buildrequest"
     plural = "buildrequests"
     endpoints = [BuildRequestEndpoint, BuildRequestsEndpoint]
-    keyField = 'buildrequestid'
+    keyField = "buildrequestid"
     eventPathPatterns = """
         /buildsets/:buildsetid/builders/:builderid/buildrequests/:buildrequestid
         /buildrequests/:buildrequestid
@@ -217,13 +227,14 @@ class BuildRequest(base.ResourceType):
         complete_at = types.NoneOk(types.DateTime())
         waited_for = types.Boolean()
         properties = types.NoneOk(types.SourcedProperties())
-    entityType = EntityType(name, 'Buildrequest')
+
+    entityType = EntityType(name, "Buildrequest")
 
     @defer.inlineCallbacks
     def generateEvent(self, brids, event):
         for brid in brids:
             # get the build and munge the result for the notification
-            br = yield self.master.data.get(('buildrequests', str(brid)))
+            br = yield self.master.data.get(("buildrequests", str(brid)))
             self.produceEvent(br, event)
 
     @defer.inlineCallbacks
@@ -243,10 +254,12 @@ class BuildRequest(base.ResourceType):
 
     @base.updateMethod
     def claimBuildRequests(self, brids, claimed_at=None):
-        return self.callDbBuildRequests(brids,
-                                        self.master.db.buildrequests.claimBuildRequests,
-                                        event="claimed",
-                                        claimed_at=claimed_at)
+        return self.callDbBuildRequests(
+            brids,
+            self.master.db.buildrequests.claimBuildRequests,
+            event="claimed",
+            claimed_at=claimed_at,
+        )
 
     @base.updateMethod
     @defer.inlineCallbacks
@@ -258,15 +271,16 @@ class BuildRequest(base.ResourceType):
     @base.updateMethod
     @defer.inlineCallbacks
     def completeBuildRequests(self, brids, results, complete_at=None):
-        assert results != RETRY, "a buildrequest cannot be completed with a retry status!"
+        assert (
+            results != RETRY
+        ), "a buildrequest cannot be completed with a retry status!"
         if not brids:
             # empty buildrequest list. No need to call db API
             return True
         try:
             yield self.master.db.buildrequests.completeBuildRequests(
-                brids,
-                results,
-                complete_at=complete_at)
+                brids, results, complete_at=complete_at
+            )
         except NotClaimedError:
             # the db layer returned a NotClaimedError exception, usually
             # because one of the buildrequests has been claimed by another
@@ -281,7 +295,7 @@ class BuildRequest(base.ResourceType):
             brdict = yield self.master.db.buildrequests.getBuildRequest(brid)
 
             if brdict:
-                bsid = brdict['buildsetid']
+                bsid = brdict["buildsetid"]
                 if bsid in seen_bsids:
                     continue
                 seen_bsids.add(bsid)
@@ -292,29 +306,34 @@ class BuildRequest(base.ResourceType):
     @base.updateMethod
     @defer.inlineCallbacks
     def rebuildBuildrequest(self, buildrequest):
-
         # goal is to make a copy of the original buildset
-        buildset = yield self.master.data.get(('buildsets', buildrequest['buildsetid']))
-        properties = yield self.master.data.get(('buildsets', buildrequest['buildsetid'],
-                                                 'properties'))
+        buildset = yield self.master.data.get(("buildsets", buildrequest["buildsetid"]))
+        properties = yield self.master.data.get(
+            ("buildsets", buildrequest["buildsetid"], "properties")
+        )
         # use original build id: after rebuild, it is saved in new buildset `rebuilt_buildid` column
-        builds = yield self.master.data.get(('buildrequests', buildrequest['buildrequestid'],
-                                             'builds'))
+        builds = yield self.master.data.get(
+            ("buildrequests", buildrequest["buildrequestid"], "builds")
+        )
         # if already rebuilt build of the same initial build is rebuilt again only save the build
         # id of the initial build
-        if len(builds) != 0 and buildset['rebuilt_buildid'] is None:
+        if len(builds) != 0 and buildset["rebuilt_buildid"] is None:
             print("Length = ", len(builds))
-            rebuilt_buildid = builds[0]['buildid']
+            rebuilt_buildid = builds[0]["buildid"]
         else:
-            rebuilt_buildid = buildset['rebuilt_buildid']
+            rebuilt_buildid = buildset["rebuilt_buildid"]
 
-        ssids = [ss['ssid'] for ss in buildset['sourcestamps']]
+        ssids = [ss["ssid"] for ss in buildset["sourcestamps"]]
         res = yield self.master.data.updates.addBuildset(
-                waited_for=False, scheduler='rebuild', sourcestamps=ssids, reason='rebuild',
-                properties=properties,
-                builderids=[buildrequest['builderid']],
-                external_idstring=buildset['external_idstring'],
-                rebuilt_buildid=rebuilt_buildid,
-                parent_buildid=buildset['parent_buildid'],
-                parent_relationship=buildset['parent_relationship'])
+            waited_for=False,
+            scheduler="rebuild",
+            sourcestamps=ssids,
+            reason="rebuild",
+            properties=properties,
+            builderids=[buildrequest["builderid"]],
+            external_idstring=buildset["external_idstring"],
+            rebuilt_buildid=rebuilt_buildid,
+            parent_buildid=buildset["parent_buildid"],
+            parent_relationship=buildset["parent_relationship"],
+        )
         return res

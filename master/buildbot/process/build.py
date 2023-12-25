@@ -139,7 +139,7 @@ class Build(properties.PropertiesMixin):
         # builder directly)
         self.workerEnvironment = env
 
-    def getSourceStamp(self, codebase=''):
+    def getSourceStamp(self, codebase=""):
         for source in self.sources:
             if source.codebase == codebase:
                 return source
@@ -166,8 +166,10 @@ class Build(properties.PropertiesMixin):
         return files
 
     def __repr__(self):
-        return (f"<Build {self.builder.name} number:{repr(self.number)} "
-                f"results:{statusToString(self.results)}>")
+        return (
+            f"<Build {self.builder.name} number:{repr(self.number)} "
+            f"results:{statusToString(self.results)}>"
+        )
 
     def blamelist(self):
         # Note that this algorithm is also implemented in
@@ -211,10 +213,7 @@ class Build(properties.PropertiesMixin):
     @staticmethod
     @defer.inlineCallbacks
     def setup_properties_known_before_build_starts(
-        props,
-        requests,
-        builder,
-        workerforbuilder=None
+        props, requests, builder, workerforbuilder=None
     ):
         # Note that this function does not setup the 'builddir' worker property
         # It's not possible to know it until before the actual worker has
@@ -268,7 +267,8 @@ class Build(properties.PropertiesMixin):
         if workerforbuilder.worker.worker_basedir:
             builddir = path_module.join(
                 bytes2unicode(workerforbuilder.worker.worker_basedir),
-                bytes2unicode(self.builder.config.workerbuilddir))
+                bytes2unicode(self.builder.config.workerbuilddir),
+            )
             self.setProperty("builddir", builddir, "Worker")
 
     def setupWorkerForBuilder(self, workerforbuilder):
@@ -281,23 +281,26 @@ class Build(properties.PropertiesMixin):
         if self._builderid is None:
             if self.hasProperty(self.VIRTUAL_BUILDERNAME_PROP):
                 self._builderid = yield self.builder.getBuilderIdForName(
-                    self.getProperty(self.VIRTUAL_BUILDERNAME_PROP))
+                    self.getProperty(self.VIRTUAL_BUILDERNAME_PROP)
+                )
                 description = self.getProperty(
                     self.VIRTUAL_BUILDERDESCRIPTION_PROP,
-                    self.builder.config.description)
+                    self.builder.config.description,
+                )
                 project = self.getProperty(
-                    self.VIRTUAL_BUILDER_PROJECT_PROP,
-                    self.builder.config.project)
+                    self.VIRTUAL_BUILDER_PROJECT_PROP, self.builder.config.project
+                )
                 tags = self.getProperty(
-                    self.VIRTUAL_BUILDERTAGS_PROP,
-                    self.builder.config.tags)
-                if type(tags) == type([]) and '_virtual_' not in tags:
-                    tags.append('_virtual_')
+                    self.VIRTUAL_BUILDERTAGS_PROP, self.builder.config.tags
+                )
+                if type(tags) == type([]) and "_virtual_" not in tags:
+                    tags.append("_virtual_")
 
                 projectid = yield self.builder.find_project_id(project)
                 # Note: not waiting for updateBuilderInfo to complete
-                self.master.data.updates.updateBuilderInfo(self._builderid, description, None,
-                                                           None, projectid, tags)
+                self.master.data.updates.updateBuilderInfo(
+                    self._builderid, description, None, None, projectid, tags
+                )
 
             else:
                 self._builderid = yield self.builder.getBuilderId()
@@ -324,17 +327,14 @@ class Build(properties.PropertiesMixin):
         # then we just assign the build to the first buildrequest
         brid = self.requests[0].id
         builderid = yield self.getBuilderId()
-        self.buildid, self.number = \
-            yield self.master.data.updates.addBuild(
-                builderid=builderid,
-                buildrequestid=brid,
-                workerid=worker.workerid)
+        self.buildid, self.number = yield self.master.data.updates.addBuild(
+            builderid=builderid, buildrequestid=brid, workerid=worker.workerid
+        )
         self._buildid_notifier.notify(self.buildid)
 
-        self.stopBuildConsumer = yield self.master.mq.startConsuming(self.controlStopBuild,
-                                                                     ("control", "builds",
-                                                                      str(self.buildid),
-                                                                      "stop"))
+        self.stopBuildConsumer = yield self.master.mq.startConsuming(
+            self.controlStopBuild, ("control", "builds", str(self.buildid), "stop")
+        )
 
         # the preparation step counts the time needed for preparing the worker and getting the
         # locks.
@@ -352,32 +352,36 @@ class Build(properties.PropertiesMixin):
         # it's impossible to represent this sequence using a single step. In the future it makes
         # sense to add two steps: one for worker substantiation and another for acquiring build
         # locks.
-        yield self.master.data.updates.set_step_locks_acquired_at(self.preparation_step.stepid)
+        yield self.master.data.updates.set_step_locks_acquired_at(
+            self.preparation_step.stepid
+        )
 
-        Build.setupBuildProperties(self.getProperties(), self.requests,
-                                   self.sources, self.number)
+        Build.setupBuildProperties(
+            self.getProperties(), self.requests, self.sources, self.number
+        )
 
         # then narrow WorkerLocks down to the right worker
         yield self._setup_locks()
-        metrics.MetricCountEvent.log('active_builds', 1)
+        metrics.MetricCountEvent.log("active_builds", 1)
 
         # make sure properties are available to people listening on 'new'
         # events
         yield self.master.data.updates.setBuildProperties(self.buildid, self)
-        yield self.master.data.updates.setBuildStateString(self.buildid, 'starting')
+        yield self.master.data.updates.setBuildStateString(self.buildid, "starting")
         yield self.master.data.updates.generateNewBuildEvent(self.buildid)
 
         try:
             self.setupBuild()  # create .steps
         except Exception:
             yield self.buildPreparationFailure(Failure(), "setupBuild")
-            yield self.buildFinished(['Build.setupBuild', 'failed'], EXCEPTION)
+            yield self.buildFinished(["Build.setupBuild", "failed"], EXCEPTION)
             return
 
         # flush properties in the beginning of the build
         yield self.master.data.updates.setBuildProperties(self.buildid, self)
-        yield self.master.data.updates.setBuildStateString(self.buildid,
-                                                           'preparing worker')
+        yield self.master.data.updates.setBuildStateString(
+            self.buildid, "preparing worker"
+        )
         try:
             ready_or_failure = False
             if workerforbuilder.worker and workerforbuilder.worker.acquireLocks():
@@ -394,9 +398,12 @@ class Build(properties.PropertiesMixin):
             yield self.buildPreparationFailure(ready_or_failure, "worker_prepare")
             if self.stopped:
                 yield self.buildFinished(["worker", "cancelled"], self.results)
-            elif isinstance(ready_or_failure, Failure) and \
-                    ready_or_failure.check(interfaces.LatentWorkerCannotSubstantiate):
-                yield self.buildFinished(["worker", "cannot", "substantiate"], EXCEPTION)
+            elif isinstance(ready_or_failure, Failure) and ready_or_failure.check(
+                interfaces.LatentWorkerCannotSubstantiate
+            ):
+                yield self.buildFinished(
+                    ["worker", "cannot", "substantiate"], EXCEPTION
+                )
             else:
                 yield self.buildFinished(["worker", "not", "available"], RETRY)
             return
@@ -409,8 +416,9 @@ class Build(properties.PropertiesMixin):
         # TODO: This can unnecessarily suspend the starting of a build, in
         # situations where the worker is live but is pushing lots of data to
         # us in a build.
-        yield self.master.data.updates.setBuildStateString(self.buildid,
-                                                           'pinging worker')
+        yield self.master.data.updates.setBuildStateString(
+            self.buildid, "pinging worker"
+        )
         log.msg(f"starting build {self}.. pinging the worker {workerforbuilder}")
         try:
             ping_success_or_failure = yield workerforbuilder.ping()
@@ -440,16 +448,20 @@ class Build(properties.PropertiesMixin):
             yield self.buildFinished(["worker", "not", "building"], RETRY)
             return
 
-        yield self.master.data.updates.setBuildStateString(self.buildid,
-                                                           'acquiring locks')
+        yield self.master.data.updates.setBuildStateString(
+            self.buildid, "acquiring locks"
+        )
         yield self.acquireLocks()
 
         readymsg = f"worker {self.getWorkerName()} ready"
-        yield self.master.data.updates.setStepStateString(self.preparation_step.stepid, readymsg)
-        yield self.master.data.updates.finishStep(self.preparation_step.stepid, SUCCESS, False)
+        yield self.master.data.updates.setStepStateString(
+            self.preparation_step.stepid, readymsg
+        )
+        yield self.master.data.updates.finishStep(
+            self.preparation_step.stepid, SUCCESS, False
+        )
 
-        yield self.master.data.updates.setBuildStateString(self.buildid,
-                                                           'building')
+        yield self.master.data.updates.setBuildStateString(self.buildid, "building")
 
         # start the sequence of steps
         self.startNextStep()
@@ -460,8 +472,9 @@ class Build(properties.PropertiesMixin):
             # if self.stopped, then this failure is a LatentWorker's failure to substantiate
             # which we triggered on purpose in stopBuild()
             log.msg("worker stopped while " + state_string, why)
-            yield self.master.data.updates.finishStep(self.preparation_step.stepid,
-                                                      CANCELLED, False)
+            yield self.master.data.updates.finishStep(
+                self.preparation_step.stepid, CANCELLED, False
+            )
         else:
             log.err(why, "while " + state_string)
             self.workerforbuilder.worker.putInQuarantine()
@@ -469,10 +482,12 @@ class Build(properties.PropertiesMixin):
                 yield self.preparation_step.addLogWithFailure(why)
             elif isinstance(why, Exception):
                 yield self.preparation_step.addLogWithException(why)
-            yield self.master.data.updates.setStepStateString(self.preparation_step.stepid,
-                                                            "error while " + state_string)
-            yield self.master.data.updates.finishStep(self.preparation_step.stepid,
-                                                      EXCEPTION, False)
+            yield self.master.data.updates.setStepStateString(
+                self.preparation_step.stepid, "error while " + state_string
+            )
+            yield self.master.data.updates.finishStep(
+                self.preparation_step.stepid, EXCEPTION, False
+            )
 
     def acquireLocks(self, res=None):
         self._acquiringLock = None
@@ -525,10 +540,11 @@ class Build(properties.PropertiesMixin):
 
         owners = set(self.blamelist())
         # gather owners from build requests
-        owners.update({r.properties['owner'] for r in self.requests
-                       if "owner" in r.properties})
+        owners.update(
+            {r.properties["owner"] for r in self.requests if "owner" in r.properties}
+        )
         if owners:
-            self.setProperty('owners', sorted(owners), 'Build')
+            self.setProperty("owners", sorted(owners), "Build")
         self.text = []  # list of text string lists (text2)
 
     def addStepsAfterCurrentStep(self, step_factories):
@@ -609,15 +625,17 @@ class Build(properties.PropertiesMixin):
             results, text = results
         assert isinstance(results, type(SUCCESS)), f"got {repr(results)}"
         summary = yield step.getBuildResultSummary()
-        if 'build' in summary:
-            text = [summary['build']]
+        if "build" in summary:
+            text = [summary["build"]]
         log.msg(f" step '{step.name}' complete: {statusToString(results)} ({text})")
         if text:
             self.text.extend(text)
-            self.master.data.updates.setBuildStateString(self.buildid,
-                                                         bytes2unicode(" ".join(self.text)))
-        self.results, terminate = computeResultAndTermination(step, results,
-                                                              self.results)
+            self.master.data.updates.setBuildStateString(
+                self.buildid, bytes2unicode(" ".join(self.text))
+            )
+        self.results, terminate = computeResultAndTermination(
+            step, results, self.results
+        )
         if not self.conn:
             # force the results to retry if the connection was lost
             self.results = RETRY
@@ -687,7 +705,7 @@ class Build(properties.PropertiesMixin):
         else:
             text = ["build", "successful"]
         if self.stopped_reason is not None:
-            text.extend([f'({self.stopped_reason})'])
+            text.extend([f"({self.stopped_reason})"])
         text.extend(self.text)
         return self.buildFinished(text, self.results)
 
@@ -715,10 +733,11 @@ class Build(properties.PropertiesMixin):
             log.msg(f" {self}: build finished")
             self.results = worst_status(self.results, results)
             eventually(self.releaseLocks)
-            metrics.MetricCountEvent.log('active_builds', -1)
+            metrics.MetricCountEvent.log("active_builds", -1)
 
-            yield self.master.data.updates.setBuildStateString(self.buildid,
-                                                               bytes2unicode(" ".join(text)))
+            yield self.master.data.updates.setBuildStateString(
+                self.buildid, bytes2unicode(" ".join(text))
+            )
             yield self.master.data.updates.finishBuild(self.buildid, self.results)
 
             if self.results == EXCEPTION:
@@ -738,8 +757,11 @@ class Build(properties.PropertiesMixin):
 
             self._tryScheduleBuildsAfterLockUnlock(build_finished=True)
         except Exception:
-            log.err(None, 'from finishing a build; this is a '
-                          'serious error - please file a bug at http://buildbot.net')
+            log.err(
+                None,
+                "from finishing a build; this is a "
+                "serious error - please file a bug at http://buildbot.net",
+            )
 
     def releaseLocks(self):
         if self._locks_to_acquire:
@@ -751,8 +773,9 @@ class Build(properties.PropertiesMixin):
 
         self._tryScheduleBuildsAfterLockUnlock(locks_released=True)
 
-    def _tryScheduleBuildsAfterLockUnlock(self, locks_released=False,
-                                          build_finished=False):
+    def _tryScheduleBuildsAfterLockUnlock(
+        self, locks_released=False, build_finished=False
+    ):
         # we need to inform the botmaster to attempt to schedule any pending
         # build request if we released any locks. This is because buildrequest
         # may be started for a completely unrelated builder and yet depend on
@@ -779,9 +802,8 @@ class Build(properties.PropertiesMixin):
 
     def getSummaryStatistic(self, name, summary_fn, initial_value=_sentinel):
         step_stats_list = [
-            st.getStatistic(name)
-            for st in self.executedSteps
-            if st.hasStatistic(name)]
+            st.getStatistic(name) for st in self.executedSteps if st.hasStatistic(name)
+        ]
         if initial_value is self._sentinel:
             return reduce(summary_fn, step_stats_list)
         return reduce(summary_fn, step_stats_list, initial_value)
@@ -801,8 +823,9 @@ class Build(properties.PropertiesMixin):
     @defer.inlineCallbacks
     def waitUntilFinished(self):
         buildid = yield self.get_buildid()
-        yield self.master.mq.waitUntilEvent(('builds', str(buildid), 'finished'),
-                                            lambda: self.finished)
+        yield self.master.mq.waitUntilEvent(
+            ("builds", str(buildid), "finished"), lambda: self.finished
+        )
 
     def getWorkerInfo(self):
         return self.worker_info

@@ -24,7 +24,6 @@ from buildbot.www.hooks.base import BaseHookHandler
 
 
 class PollingHandler(BaseHookHandler):
-
     def getChanges(self, req):
         change_svc = req.site.master.change_svc
         poll_all = b"poller" not in req.args
@@ -42,18 +41,20 @@ class PollingHandler(BaseHookHandler):
                 continue
             if not hasattr(source, "name"):
                 continue
-            if (not poll_all and
-               unicode2bytes(source.name) not in req.args[b'poller']):
+            if not poll_all and unicode2bytes(source.name) not in req.args[b"poller"]:
                 continue
             if not allow_all and unicode2bytes(source.name) not in allowed:
                 continue
             pollers.append(source)
 
         if not poll_all:
-            missing = (set(req.args[b'poller']) -
-                      set(unicode2bytes(s.name) for s in pollers))
+            missing = set(req.args[b"poller"]) - set(
+                unicode2bytes(s.name) for s in pollers
+            )
             if missing:
-                raise ValueError(f'Could not find pollers: {bytes2unicode(b",".join(missing))}')
+                raise ValueError(
+                    f'Could not find pollers: {bytes2unicode(b",".join(missing))}'
+                )
 
         for p in pollers:
             p.force()

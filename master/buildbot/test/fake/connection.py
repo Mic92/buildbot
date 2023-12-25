@@ -17,7 +17,6 @@ from twisted.internet import defer
 
 
 class FakeConnection:
-
     is_fake_test_connection = True
 
     _waiting_for_interrupt = False
@@ -32,19 +31,22 @@ class FakeConnection:
         self._blocked_deferreds = []
 
     @defer.inlineCallbacks
-    def remoteStartCommand(self, remote_command, builder_name, command_id, command_name, args):
-
+    def remoteStartCommand(
+        self, remote_command, builder_name, command_id, command_name, args
+    ):
         self._waiting_for_interrupt = False
         if self._next_command_number in self._commands_numbers_to_interrupt:
             self._waiting_for_interrupt = True
 
-            yield self.step.interrupt('interrupt reason')
+            yield self.step.interrupt("interrupt reason")
 
             if self._waiting_for_interrupt:
                 raise RuntimeError("Interrupted step, but command was not interrupted")
 
         self._next_command_number += 1
-        yield self.testcase._connection_remote_start_command(remote_command, self, builder_name)
+        yield self.testcase._connection_remote_start_command(
+            remote_command, self, builder_name
+        )
 
         # running behaviors may still attempt interrupt the command
         if self._waiting_for_interrupt:

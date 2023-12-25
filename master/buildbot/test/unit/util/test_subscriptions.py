@@ -25,12 +25,11 @@ class TestException(Exception):
 
 
 class subscriptions(unittest.TestCase):
-
     def setUp(self):
-        self.subpt = subscription.SubscriptionPoint('test_sub')
+        self.subpt = subscription.SubscriptionPoint("test_sub")
 
     def test_str(self):
-        self.assertIn('test_sub', str(self.subpt))
+        self.assertIn("test_sub", str(self.subpt))
 
     def test_subscribe_unsubscribe(self):
         state = []
@@ -57,7 +56,7 @@ class subscriptions(unittest.TestCase):
 
     def test_exception(self):
         def cb(*args, **kwargs):
-            raise RuntimeError('mah bucket!')
+            raise RuntimeError("mah bucket!")
 
         self.subpt.subscribe(cb)
         self.subpt.deliver()  # should not raise
@@ -71,13 +70,12 @@ class subscriptions(unittest.TestCase):
         self.assertEqual(1, len(self.flushLoggedErrors(RuntimeError)))
 
     def test_deferred_exception(self):
-
         d = defer.Deferred()
 
         @defer.inlineCallbacks
         def cb_deferred(*args, **kwargs):
             yield d
-            raise RuntimeError('msg')
+            raise RuntimeError("msg")
 
         self.subpt.subscribe(cb_deferred)
         self.subpt.deliver()
@@ -98,7 +96,7 @@ class subscriptions(unittest.TestCase):
         @defer.inlineCallbacks
         def cb_deferred(*args, **kwargs):
             yield d
-            raise TestException('msg')
+            raise TestException("msg")
 
         self.subpt.subscribe(cb_deferred)
         self.subpt.deliver()
@@ -111,16 +109,15 @@ class subscriptions(unittest.TestCase):
         self.assertEqual(2, len(self.flushLoggedErrors(TestException)))
 
     def test_multiple_exceptions(self):
-
         d = defer.Deferred()
 
         @defer.inlineCallbacks
         def cb_deferred(*args, **kwargs):
             yield d
-            raise RuntimeError('msg')
+            raise RuntimeError("msg")
 
         def cb(*args, **kwargs):
-            raise RuntimeError('msg')
+            raise RuntimeError("msg")
 
         self.subpt.subscribe(cb_deferred)
         self.subpt.subscribe(cb)
@@ -142,6 +139,7 @@ class subscriptions(unittest.TestCase):
             def cb(*args):
                 state.append(args)
                 return d
+
             return cb
 
         d1 = defer.Deferred()

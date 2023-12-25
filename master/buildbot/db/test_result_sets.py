@@ -27,21 +27,22 @@ class TestResultSetAlreadyCompleted(Exception):
 
 
 class TestResultSetsConnectorComponent(base.DBConnectorComponent):
-
     @defer.inlineCallbacks
-    def addTestResultSet(self, builderid, buildid, stepid, description, category, value_unit):
+    def addTestResultSet(
+        self, builderid, buildid, stepid, description, category, value_unit
+    ):
         # Returns the id of the new result set
         def thd(conn):
             sets_table = self.db.model.test_result_sets
 
             insert_values = {
-                'builderid': builderid,
-                'buildid': buildid,
-                'stepid': stepid,
-                'description': description,
-                'category': category,
-                'value_unit': value_unit,
-                'complete': 0
+                "builderid": builderid,
+                "buildid": buildid,
+                "stepid": stepid,
+                "description": description,
+                "category": category,
+                "value_unit": value_unit,
+                "complete": 0,
             }
 
             q = sets_table.insert().values(insert_values)
@@ -61,12 +62,14 @@ class TestResultSetsConnectorComponent(base.DBConnectorComponent):
             if not row:
                 return None
             return self._thd_row2dict(conn, row)
+
         res = yield self.db.pool.do(thd)
         return res
 
     @defer.inlineCallbacks
-    def getTestResultSets(self, builderid, buildid=None, stepid=None, complete=None,
-                          result_spec=None):
+    def getTestResultSets(
+        self, builderid, buildid=None, stepid=None, complete=None, result_spec=None
+    ):
         def thd(conn):
             sets_table = self.db.model.test_result_sets
             q = sets_table.select().where(sets_table.c.builderid == builderid)
@@ -77,41 +80,52 @@ class TestResultSetsConnectorComponent(base.DBConnectorComponent):
             if complete is not None:
                 q = q.where(sets_table.c.complete == (1 if complete else 0))
             if result_spec is not None:
-                return result_spec.thd_execute(conn, q, lambda x: self._thd_row2dict(conn, x))
+                return result_spec.thd_execute(
+                    conn, q, lambda x: self._thd_row2dict(conn, x)
+                )
             res = conn.execute(q)
             return [self._thd_row2dict(conn, row) for row in res.fetchall()]
+
         res = yield self.db.pool.do(thd)
         return res
 
     @defer.inlineCallbacks
-    def completeTestResultSet(self, test_result_setid, tests_passed=None, tests_failed=None):
+    def completeTestResultSet(
+        self, test_result_setid, tests_passed=None, tests_failed=None
+    ):
         def thd(conn):
             sets_table = self.db.model.test_result_sets
 
-            values = {'complete': 1}
+            values = {"complete": 1}
             if tests_passed is not None:
-                values['tests_passed'] = tests_passed
+                values["tests_passed"] = tests_passed
             if tests_failed is not None:
-                values['tests_failed'] = tests_failed
+                values["tests_failed"] = tests_failed
 
             q = sets_table.update().values(values)
-            q = q.where((sets_table.c.id == test_result_setid) &
-                        (sets_table.c.complete == 0))
+            q = q.where(
+                (sets_table.c.id == test_result_setid) & (sets_table.c.complete == 0)
+            )
 
             res = conn.execute(q)
             if res.rowcount == 0:
-                raise TestResultSetAlreadyCompleted(f'Test result set {test_result_setid} '
-                                                    f'is already completed or does not exist')
+                raise TestResultSetAlreadyCompleted(
+                    f"Test result set {test_result_setid} "
+                    f"is already completed or does not exist"
+                )
+
         yield self.db.pool.do(thd)
 
     def _thd_row2dict(self, conn, row):
-        return TestResultSetDict(id=row.id,
-                                 builderid=row.builderid,
-                                 buildid=row.buildid,
-                                 stepid=row.stepid,
-                                 description=row.description,
-                                 category=row.category,
-                                 value_unit=row.value_unit,
-                                 tests_passed=row.tests_passed,
-                                 tests_failed=row.tests_failed,
-                                 complete=bool(row.complete))
+        return TestResultSetDict(
+            id=row.id,
+            builderid=row.builderid,
+            buildid=row.buildid,
+            stepid=row.stepid,
+            description=row.description,
+            category=row.category,
+            value_unit=row.value_unit,
+            tests_passed=row.tests_passed,
+            tests_failed=row.tests_failed,
+            complete=bool(row.complete),
+        )

@@ -42,8 +42,8 @@ class FileWriter(base.FileWriterImpl):
 
         self.destfile = destfile
         self.mode = mode
-        fd, self.tmpname = tempfile.mkstemp(dir=dirname, prefix='buildbot-transfer-')
-        self.fp = os.fdopen(fd, 'wb')
+        fd, self.tmpname = tempfile.mkstemp(dir=dirname, prefix="buildbot-transfer-")
+        self.fp = os.fdopen(fd, "wb")
         self.remaining = maxsize
 
     def remote_write(self, data):
@@ -57,7 +57,7 @@ class FileWriter(base.FileWriterImpl):
         data = unicode2bytes(data)
         if self.remaining is not None:
             if len(data) > self.remaining:
-                data = data[:self.remaining]
+                data = data[: self.remaining]
             self.fp.write(data)
             self.remaining = self.remaining - len(data)
         else:
@@ -104,7 +104,7 @@ class DirectoryWriter(FileWriter):
         self.destroot = destroot
         self.compress = compress
 
-        self.fd, self.tarname = tempfile.mkstemp(prefix='buildbot-transfer-')
+        self.fd, self.tarname = tempfile.mkstemp(prefix="buildbot-transfer-")
         os.close(self.fd)
 
         super().__init__(self.tarname, maxsize, mode)
@@ -117,17 +117,17 @@ class DirectoryWriter(FileWriter):
         self.remote_close()
 
         # Map configured compression to a TarFile setting
-        if self.compress == 'bz2':
-            mode = 'r|bz2'
-        elif self.compress == 'gz':
-            mode = 'r|gz'
+        if self.compress == "bz2":
+            mode = "r|bz2"
+        elif self.compress == "gz":
+            mode = "r|gz"
         else:
-            mode = 'r'
+            mode = "r"
 
         # Unpack archive and clean up after self
         with tarfile.open(name=self.tarname, mode=mode) as archive:
-            if hasattr(tarfile, 'data_filter'):
-                archive.extractall(path=self.destroot, filter='data')
+            if hasattr(tarfile, "data_filter"):
+                archive.extractall(path=self.destroot, filter="data")
             else:
                 archive.extractall(path=self.destroot)
         os.remove(self.tarname)
@@ -153,7 +153,7 @@ class FileReader(base.FileReaderImpl):
         @rtype: C{string} of bytes read from file
         """
         if self.fp is None:
-            return ''
+            return ""
 
         data = self.fp.read(maxlength)
         return data

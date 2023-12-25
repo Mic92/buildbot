@@ -27,6 +27,7 @@ class BaseManager(service.AsyncMultiService):
     Allows various pieces of code to request a (port, username) combo, along
     with a password and a connection factory.
     """
+
     def __init__(self, name):
         super().__init__()
         self.setName(name)
@@ -42,13 +43,15 @@ class BaseManager(service.AsyncMultiService):
         portstr = config_portstr
 
         # do some basic normalization of portstrs
-        if isinstance(portstr, int) or ':' not in portstr:
+        if isinstance(portstr, int) or ":" not in portstr:
             portstr = f"tcp:{portstr}".format(portstr)
 
         reg = Registration(self, portstr, username)
 
         if portstr not in self.dispatchers:
-            disp = self.dispatchers[portstr] = self.dispatcher_class(config_portstr, portstr)
+            disp = self.dispatchers[portstr] = self.dispatcher_class(
+                config_portstr, portstr
+            )
             yield disp.setServiceParent(self)
         else:
             disp = self.dispatchers[portstr]
@@ -68,7 +71,6 @@ class BaseManager(service.AsyncMultiService):
 
 
 class Registration:
-
     def __init__(self, manager, portstr, username):
         self.portstr = portstr
         "portstr this registration is active on"
@@ -105,7 +107,9 @@ class BaseDispatcher(service.AsyncService):
         self.port = None
 
     def __repr__(self):
-        return f'<base.BaseDispatcher for {", ".join(list(self.users))} on {self.portstr}>'
+        return (
+            f'<base.BaseDispatcher for {", ".join(list(self.users))} on {self.portstr}>'
+        )
 
     def start_listening_port(self):
         return strports.listen(self.portstr, self.serverFactory)
@@ -126,9 +130,13 @@ class BaseDispatcher(service.AsyncService):
 
     def register(self, username, password, pfactory):
         if self.debug:
-            log.msg(f"registering username '{username}' on port {self.portstr}: {pfactory}")
+            log.msg(
+                f"registering username '{username}' on port {self.portstr}: {pfactory}"
+            )
         if username in self.users:
-            raise KeyError(f"username '{username}' is already registered on port {self.portstr}")
+            raise KeyError(
+                f"username '{username}' is already registered on port {self.portstr}"
+            )
         self.users[username] = (password, pfactory)
 
     def unregister(self, username):

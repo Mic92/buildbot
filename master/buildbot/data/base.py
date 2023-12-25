@@ -50,9 +50,9 @@ class ResourceType:
         # to get the final event path tuple
         pathPatterns = self.eventPathPatterns
         pathPatterns = pathPatterns.split()
-        identifiers = re.compile(r':([^/]*)')
+        identifiers = re.compile(r":([^/]*)")
         for i, pp in enumerate(pathPatterns):
-            pp = identifiers.sub(r'{\1}', pp)
+            pp = identifiers.sub(r"{\1}", pp)
             if pp.startswith("/"):
                 pp = pp[1:]
             pathPatterns[i] = pp
@@ -117,15 +117,21 @@ class Endpoint:
         self.rtype = rtype
         self.master = master
         if hasattr(self, "isRaw"):
-            warn_deprecated("3.10.0", "Endpoint.isRaw has been deprecated, "
-                            "please set \"kind\" attribute instead. "
-                            "isRaw = True is equivalent to kind = EndpointKind.RAW")
+            warn_deprecated(
+                "3.10.0",
+                "Endpoint.isRaw has been deprecated, "
+                'please set "kind" attribute instead. '
+                "isRaw = True is equivalent to kind = EndpointKind.RAW",
+            )
             if self.isRaw:
                 self.kind = EndpointKind.RAW
         if hasattr(self, "isCollection"):
-            warn_deprecated("3.10.0", "Endpoint.isCollection has been deprecated, "
-                            "please set \"kind\" attribute instead. "
-                            "isCollection = True is equivalent to kind = EndpointKind.COLLECTION")
+            warn_deprecated(
+                "3.10.0",
+                "Endpoint.isCollection has been deprecated, "
+                'please set "kind" attribute instead. '
+                "isCollection = True is equivalent to kind = EndpointKind.COLLECTION",
+            )
             if self.isCollection:
                 self.kind = EndpointKind.COLLECTION
 
@@ -136,7 +142,9 @@ class Endpoint:
         # we convert the action into a mixedCase method name
         action_method = getattr(self, "action" + action.capitalize(), None)
         if action_method is None:
-            raise exceptions.InvalidControlException(f"action: {action} is not supported")
+            raise exceptions.InvalidControlException(
+                f"action: {action} is not supported"
+            )
         return action_method(args, kwargs)
 
     def get_kwargs_from_graphql_parent(self, parent, parent_type):
@@ -151,7 +159,7 @@ class Endpoint:
                 )
         else:
             parentid = self.parentMapping[parent_type]
-        ret = {'graphql': True}
+        ret = {"graphql": True}
         ret[parentid] = parent[parentid]
         return ret
 
@@ -161,8 +169,8 @@ class Endpoint:
                 return self.get_kwargs_from_graphql_parent(
                     parent, resolve_info.parent_type.name
                 )
-            return {'graphql': True}
-        ret = {'graphql': True}
+            return {"graphql": True}
+        ret = {"graphql": True}
         k = self.rtype.keyField
         v = args.pop(k)
         if v is not None:
@@ -183,54 +191,57 @@ class BuildNestingMixin:
     def getBuildid(self, kwargs):
         # need to look in the context of a step, specified by build or
         # builder or whatever
-        if 'buildid' in kwargs:
-            return kwargs['buildid']
+        if "buildid" in kwargs:
+            return kwargs["buildid"]
         else:
             builderid = yield self.getBuilderId(kwargs)
             if builderid is None:
                 return None
             build = yield self.master.db.builds.getBuildByNumber(
-                builderid=builderid,
-                number=kwargs['build_number'])
+                builderid=builderid, number=kwargs["build_number"]
+            )
             if not build:
                 return None
-            return build['id']
+            return build["id"]
 
     @defer.inlineCallbacks
     def getStepid(self, kwargs):
-        if 'stepid' in kwargs:
-            return kwargs['stepid']
+        if "stepid" in kwargs:
+            return kwargs["stepid"]
         else:
             buildid = yield self.getBuildid(kwargs)
             if buildid is None:
                 return None
 
-            dbdict = yield self.master.db.steps.getStep(buildid=buildid,
-                                                        number=kwargs.get(
-                                                            'step_number'),
-                                                        name=kwargs.get('step_name'))
+            dbdict = yield self.master.db.steps.getStep(
+                buildid=buildid,
+                number=kwargs.get("step_number"),
+                name=kwargs.get("step_name"),
+            )
             if not dbdict:
                 return None
-            return dbdict['id']
+            return dbdict["id"]
 
     def getBuilderId(self, kwargs):
-        if 'buildername' in kwargs:
-            return self.master.db.builders.findBuilderId(kwargs['buildername'], autoCreate=False)
-        return defer.succeed(kwargs['builderid'])
+        if "buildername" in kwargs:
+            return self.master.db.builders.findBuilderId(
+                kwargs["buildername"], autoCreate=False
+            )
+        return defer.succeed(kwargs["builderid"])
 
     # returns Deferred that yields a number
     def get_project_id(self, kwargs):
         if "projectname" in kwargs:
-            return self.master.db.projects.find_project_id(kwargs["projectname"], auto_create=False)
+            return self.master.db.projects.find_project_id(
+                kwargs["projectname"], auto_create=False
+            )
         return defer.succeed(kwargs["projectid"])
 
 
 class ListResult(UserList):
+    __slots__ = ["offset", "total", "limit"]
 
-    __slots__ = ['offset', 'total', 'limit']
-
-    def __init__(self, values,
-                 offset=None, total=None, limit=None):
+    def __init__(self, values, offset=None, total=None, limit=None):
         super().__init__(values)
 
         # if set, this is the index in the overall results of the first element of
@@ -244,18 +255,25 @@ class ListResult(UserList):
         self.limit = limit
 
     def __repr__(self):
-        return (f"ListResult({repr(self.data)}, offset={repr(self.offset)}, "
-                f"total={repr(self.total)}, limit={repr(self.limit)})")
+        return (
+            f"ListResult({repr(self.data)}, offset={repr(self.offset)}, "
+            f"total={repr(self.total)}, limit={repr(self.limit)})"
+        )
 
     def __eq__(self, other):
         if isinstance(other, ListResult):
-            return self.data == other.data \
-                and self.offset == other.offset \
-                and self.total == other.total \
+            return (
+                self.data == other.data
+                and self.offset == other.offset
+                and self.total == other.total
                 and self.limit == other.limit
-        return self.data == other \
-            and self.offset is None and self.limit is None\
+            )
+        return (
+            self.data == other
+            and self.offset is None
+            and self.limit is None
             and (self.total is None or self.total == len(other))
+        )
 
     def __ne__(self, other):
         return not self == other

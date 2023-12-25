@@ -44,7 +44,9 @@ class ExponentialBackoffEngineAsyncTests(unittest.TestCase, TestReactorMixin):
 
         self.reactor.advance(time * 0.99)
         self.assertFalse(d.called)
-        self.reactor.advance(time * 0.010001)  # avoid rounding errors by overshooting a little
+        self.reactor.advance(
+            time * 0.010001
+        )  # avoid rounding errors by overshooting a little
         self.assertTrue(d.called)
 
         yield d  # throw exceptions stored in d, if any
@@ -56,8 +58,9 @@ class ExponentialBackoffEngineAsyncTests(unittest.TestCase, TestReactorMixin):
 
     @defer.inlineCallbacks
     def test_wait_times(self):
-        engine = backoff.ExponentialBackoffEngineAsync(self.reactor, start_seconds=10,
-                                                       multiplier=2, max_wait_seconds=1000)
+        engine = backoff.ExponentialBackoffEngineAsync(
+            self.reactor, start_seconds=10, multiplier=2, max_wait_seconds=1000
+        )
         yield self.assert_called_after_time(engine.wait_on_failure(), 10)
         yield self.assert_called_after_time(engine.wait_on_failure(), 20)
 
@@ -74,8 +77,9 @@ class ExponentialBackoffEngineAsyncTests(unittest.TestCase, TestReactorMixin):
 
     @defer.inlineCallbacks
     def test_max_wait_seconds(self):
-        engine = backoff.ExponentialBackoffEngineAsync(self.reactor, start_seconds=10,
-                                                       multiplier=2, max_wait_seconds=100)
+        engine = backoff.ExponentialBackoffEngineAsync(
+            self.reactor, start_seconds=10, multiplier=2, max_wait_seconds=100
+        )
 
         yield self.assert_called_after_time(engine.wait_on_failure(), 10)
         yield self.assert_called_after_time(engine.wait_on_failure(), 20)
@@ -100,8 +104,9 @@ class ExponentialBackoffEngineSyncTests(unittest.TestCase):
     # All the complex cases are tested in ExponentialBackoffEngineAsyncTests where we can fake
     # the clock. For the synchronous engine we just need to test that waiting works.
     def test_wait_on_failure(self):
-        engine = backoff.ExponentialBackoffEngineSync(start_seconds=0.05, multiplier=2,
-                                                      max_wait_seconds=1)
+        engine = backoff.ExponentialBackoffEngineSync(
+            start_seconds=0.05, multiplier=2, max_wait_seconds=1
+        )
         begin = time.monotonic()
         engine.wait_on_failure()
         end = time.monotonic()

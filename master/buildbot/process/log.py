@@ -49,7 +49,7 @@ class Log:
         If cfg is already a lambda or function, then we return that.
         """
         if isinstance(cfg, (bytes, str)):
-            return lambda s: s.decode(cfg, 'replace')
+            return lambda s: s.decode(cfg, "replace")
         return cfg
 
     @classmethod
@@ -76,9 +76,11 @@ class Log:
     def addRawLines(self, lines):
         # used by subclasses to add lines that are already appropriately
         # formatted for the log type, and newline-terminated
-        assert lines[-1] == '\n'
+        assert lines[-1] == "\n"
         assert not self.finished
-        yield self.lock.run(lambda: self.master.data.updates.appendLog(self.logid, lines))
+        yield self.lock.run(
+            lambda: self.master.data.updates.appendLog(self.logid, lines)
+        )
 
     # completion
 
@@ -105,6 +107,7 @@ class Log:
         def fToRun():
             self.finished = True
             return self.master.data.updates.finishLog(self.logid)
+
         yield self.lock.run(fToRun)
         # notify subscribers *after* finishing the log
         self.subPoint.deliver(None, None)
@@ -125,7 +128,6 @@ class Log:
 
 
 class PlainLog(Log):
-
     def __init__(self, master, name, type, logid, decoder):
         super().__init__(master, name, type, logid, decoder)
 
@@ -151,24 +153,21 @@ class PlainLog(Log):
 
 
 class TextLog(PlainLog):
-
     pass
 
 
-Log._byType['t'] = TextLog
+Log._byType["t"] = TextLog
 
 
 class HtmlLog(PlainLog):
-
     pass
 
 
-Log._byType['h'] = HtmlLog
+Log._byType["h"] = HtmlLog
 
 
 class StreamLog(Log):
-
-    pat = re.compile('^', re.M)
+    pat = re.compile("^", re.M)
 
     def __init__(self, step, name, type, logid, decoder):
         super().__init__(step, name, type, logid, decoder)
@@ -198,32 +197,32 @@ class StreamLog(Log):
     def addStdout(self, text):
         if not isinstance(text, str):
             text = self.decoder(text)
-        return self.split_lines('o', text)
+        return self.split_lines("o", text)
 
     def addStderr(self, text):
         if not isinstance(text, str):
             text = self.decoder(text)
-        return self.split_lines('e', text)
+        return self.split_lines("e", text)
 
     def addHeader(self, text):
         if not isinstance(text, str):
             text = self.decoder(text)
-        return self.split_lines('h', text)
+        return self.split_lines("h", text)
 
     def add_stdout_lines(self, text):
         if not isinstance(text, str):
             text = self.decoder(text)
-        return self._on_whole_lines('o', text)
+        return self._on_whole_lines("o", text)
 
     def add_stderr_lines(self, text):
         if not isinstance(text, str):
             text = self.decoder(text)
-        return self._on_whole_lines('e', text)
+        return self._on_whole_lines("e", text)
 
     def add_header_lines(self, text):
         if not isinstance(text, str):
             text = self.decoder(text)
-        return self._on_whole_lines('h', text)
+        return self._on_whole_lines("h", text)
 
     @defer.inlineCallbacks
     def finish(self):
@@ -234,4 +233,4 @@ class StreamLog(Log):
         yield super().finish()
 
 
-Log._byType['s'] = StreamLog
+Log._byType["s"] = StreamLog

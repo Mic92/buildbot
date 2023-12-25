@@ -49,7 +49,9 @@ class BufferManager:
             udpate_output = self._buffered[-1][1]
             if logname == "log":
                 if udpate_output[0] == msg_data[0]:
-                    joined_line_info = self.join_line_info(udpate_output[1], msg_data[1])
+                    joined_line_info = self.join_line_info(
+                        udpate_output[1], msg_data[1]
+                    )
                     self._buffered[-1] = (logname, (msg_data[0], joined_line_info))
                     return
             else:
@@ -60,8 +62,9 @@ class BufferManager:
 
     def setup_timeout(self):
         if not self._send_message_timer:
-            self._send_message_timer = self._reactor.callLater(self._buffer_timeout,
-                                                               self.send_message_from_buffer)
+            self._send_message_timer = self._reactor.callLater(
+                self._buffer_timeout, self.send_message_from_buffer
+            )
 
     def append(self, logname, data):
         # add data to the buffer for logname
@@ -123,7 +126,9 @@ class BufferManager:
                     string_part_size = data[1][pos_end - 1] - (data[1][pos_start - 1])
                 index_list_part_size = (pos_end - pos_start) * 8
                 times_list_part_size = (pos_end - pos_start) * 8
-                line_size = string_part_size + index_list_part_size + times_list_part_size
+                line_size = (
+                    string_part_size + index_list_part_size + times_list_part_size
+                )
 
                 if line_size <= self._buffer_size:
                     pos_end += 1
@@ -139,13 +144,20 @@ class BufferManager:
             pos_substring_end = data[1][pos_end - 1] + 1
             if pos_start != 0:
                 pos_substring_start = data[1][pos_start - 1] + 1
-                line_info = (data[0][pos_substring_start:pos_substring_end],
-                             [index - pos_substring_start for index in data[1][pos_start:pos_end]],
-                             data[2][pos_start: pos_end])
+                line_info = (
+                    data[0][pos_substring_start:pos_substring_end],
+                    [
+                        index - pos_substring_start
+                        for index in data[1][pos_start:pos_end]
+                    ],
+                    data[2][pos_start:pos_end],
+                )
             else:
-                line_info = (data[0][:pos_substring_end],
-                             data[1][:pos_end],
-                             data[2][:pos_end])
+                line_info = (
+                    data[0][:pos_substring_end],
+                    data[1][:pos_end],
+                    data[2][:pos_end],
+                )
 
             if logname == "log":
                 msg_data = (log, line_info)

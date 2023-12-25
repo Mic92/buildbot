@@ -39,12 +39,12 @@ class FakeRequest(Mock):
     arguments to self.addedChanges.
     """
 
-    written = b''
+    written = b""
     finished = False
     redirected_to = None
     failure = None
 
-    def __init__(self, args=None, content=b''):
+    def __init__(self, args=None, content=b""):
         super().__init__()
 
         if args is None:
@@ -54,9 +54,9 @@ class FakeRequest(Mock):
         self.content = BytesIO(content)
         self.site = Mock()
         self.site.buildbot_service = Mock()
-        self.uri = b'/'
+        self.uri = b"/"
         self.prepath = []
-        self.method = b'GET'
+        self.method = b"GET"
         self.received_headers = {}
 
         self.deferred = defer.Deferred()
@@ -85,13 +85,17 @@ class FakeRequest(Mock):
     def test_render(self, resource):
         for arg in self.args:
             if not isinstance(arg, bytes):
-                raise ValueError(f"self.args: {self.args!r},  contains values which are not bytes")
+                raise ValueError(
+                    f"self.args: {self.args!r},  contains values which are not bytes"
+                )
 
         if self.uri and not isinstance(self.uri, bytes):
             raise ValueError(f"self.uri: {self.uri!r} is {type(self.uri)}, not bytes")
 
         if self.method and not isinstance(self.method, bytes):
-            raise ValueError(f"self.method: {self.method!r} is {type(self.method)}, not bytes")
+            raise ValueError(
+                f"self.method: {self.method!r} is {type(self.method)}, not bytes"
+            )
 
         result = resource.render(self)
         if isinstance(result, bytes):
@@ -99,8 +103,10 @@ class FakeRequest(Mock):
             self.finish()
             return self.deferred
         elif isinstance(result, str):
-            raise ValueError(f"{resource.render!r} should return bytes, not {type(result)}: "
-                             f"{result!r}")
+            raise ValueError(
+                f"{resource.render!r} should return bytes, not {type(result)}: "
+                f"{result!r}"
+            )
         elif result is server.NOT_DONE_YET:
             return self.deferred
         else:

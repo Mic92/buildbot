@@ -27,28 +27,28 @@ from buildbot.util import in_reactor
 
 @defer.inlineCallbacks
 def doCleanupDatabase(config, master_cfg):
-    if not config['quiet']:
+    if not config["quiet"]:
         print(f"cleaning database ({master_cfg.db['db_url']})")
 
-    master = BuildMaster(config['basedir'])
+    master = BuildMaster(config["basedir"])
     master.config = master_cfg
     db = master.db
-    yield db.setup(check_version=False, verbose=not config['quiet'])
+    yield db.setup(check_version=False, verbose=not config["quiet"])
     res = yield db.logs.getLogs()
     i = 0
     percent = 0
     saved = 0
     for log in res:
-        saved += yield db.logs.compressLog(log['id'], force=config['force'])
+        saved += yield db.logs.compressLog(log["id"], force=config["force"])
         i += 1
-        if not config['quiet'] and percent != i * 100 / len(res):
+        if not config["quiet"] and percent != i * 100 / len(res):
             percent = i * 100 / len(res)
             print(f" {percent}%  {saved} saved")
             saved = 0
             sys.stdout.flush()
 
-    if master_cfg.db['db_url'].startswith("sqlite"):
-        if not config['quiet']:
+    if master_cfg.db["db_url"].startswith("sqlite"):
+        if not config["quiet"]:
             print("executing sqlite vacuum function...")
 
         # sqlite vacuum function rebuild the whole database to claim
@@ -78,23 +78,26 @@ def cleanupDatabase(config):  # pragma: no cover
 
 @defer.inlineCallbacks
 def _cleanupDatabase(config):
-
     if not base.checkBasedir(config):
         return 1
 
-    config['basedir'] = os.path.abspath(config['basedir'])
+    config["basedir"] = os.path.abspath(config["basedir"])
 
     orig_cwd = os.getcwd()
 
     try:
-        os.chdir(config['basedir'])
+        os.chdir(config["basedir"])
 
-        with base.captureErrors((SyntaxError, ImportError),
-                                f"Unable to load 'buildbot.tac' from '{config['basedir']}':"):
-            configFile = base.getConfigFileFromTac(config['basedir'])
+        with base.captureErrors(
+            (SyntaxError, ImportError),
+            f"Unable to load 'buildbot.tac' from '{config['basedir']}':",
+        ):
+            configFile = base.getConfigFileFromTac(config["basedir"])
 
-        with base.captureErrors(config_module.ConfigErrors,
-                                f"Unable to load '{configFile}' from '{config['basedir']}':"):
+        with base.captureErrors(
+            config_module.ConfigErrors,
+            f"Unable to load '{configFile}' from '{config['basedir']}':",
+        ):
             master_cfg = base.loadConfig(config, configFile)
 
         if not master_cfg:
@@ -102,7 +105,7 @@ def _cleanupDatabase(config):
 
         yield doCleanupDatabase(config, master_cfg)
 
-        if not config['quiet']:
+        if not config["quiet"]:
             print("cleanup complete")
     finally:
         os.chdir(orig_cwd)

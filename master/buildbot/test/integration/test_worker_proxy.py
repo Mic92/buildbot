@@ -35,19 +35,19 @@ from .interop import test_worker_reconnect
 
 
 def get_log_path():
-    return f'test_worker_proxy_stdout_{os.getpid()}.txt'
+    return f"test_worker_proxy_stdout_{os.getpid()}.txt"
 
 
 def write_to_log(msg, with_traceback=False):
-    with open(get_log_path(), 'a', encoding='utf-8') as outfile:
+    with open(get_log_path(), "a", encoding="utf-8") as outfile:
         outfile.write(msg)
         if with_traceback:
             import traceback
+
             traceback.print_exc(file=outfile)
 
 
 async def handle_client(local_reader, local_writer):
-
     async def pipe(reader, writer):
         try:
             while not reader.at_eof():
@@ -134,7 +134,9 @@ class RunMasterBehindProxy(RunMasterBase):
     def setUp(self):
         write_to_log("setUp\n")
         self.queue = multiprocessing.Queue()
-        self.proxy_process = multiprocessing.Process(target=run_proxy, args=(self.queue,))
+        self.proxy_process = multiprocessing.Process(
+            target=run_proxy, args=(self.queue,)
+        )
         self.proxy_process.start()
         self.target_port = self.queue.get()
         write_to_log(f"got target_port {self.target_port}\n")
@@ -145,10 +147,10 @@ class RunMasterBehindProxy(RunMasterBase):
         self.proxy_process.join()
         if self.debug:
             print("---- stdout ----")
-            with open(get_log_path(), encoding='utf-8') as file:
+            with open(get_log_path(), encoding="utf-8") as file:
                 print(file.read())
             print("---- ------ ----")
-            with open(self.queue.get(), encoding='utf-8') as file:
+            with open(self.queue.get(), encoding="utf-8") as file:
                 print(file.read())
             print("---- ------ ----")
             os.unlink(get_log_path())
@@ -156,37 +158,51 @@ class RunMasterBehindProxy(RunMasterBase):
     @defer.inlineCallbacks
     def setup_master(self, config_dict, startWorker=True):
         proxy_connection_string = f"tcp:127.0.0.1:{self.target_port}"
-        yield super().setup_master(config_dict, startWorker,
-                                   proxy_connection_string=proxy_connection_string)
+        yield super().setup_master(
+            config_dict, startWorker, proxy_connection_string=proxy_connection_string
+        )
 
 
 # Use interoperability test cases to test the HTTP proxy tunneling.
 
-class ProxyCommandMixinMasterPB(RunMasterBehindProxy, test_commandmixin.CommandMixinMasterPB):
+
+class ProxyCommandMixinMasterPB(
+    RunMasterBehindProxy, test_commandmixin.CommandMixinMasterPB
+):
     pass
 
 
-class ProxyCompositeStepMixinMasterPb(RunMasterBehindProxy,
-                                      test_compositestepmixin.CompositeStepMixinMasterPb):
+class ProxyCompositeStepMixinMasterPb(
+    RunMasterBehindProxy, test_compositestepmixin.CompositeStepMixinMasterPb
+):
     pass
 
 
-class ProxyInterruptCommandPb(RunMasterBehindProxy, test_interruptcommand.InterruptCommandPb):
+class ProxyInterruptCommandPb(
+    RunMasterBehindProxy, test_interruptcommand.InterruptCommandPb
+):
     pass
 
 
-class ProxySecretsConfigPB(RunMasterBehindProxy, test_integration_secrets.SecretsConfigPB):
+class ProxySecretsConfigPB(
+    RunMasterBehindProxy, test_integration_secrets.SecretsConfigPB
+):
     pass
 
 
-class ProxySetPropertyFromCommandPB(RunMasterBehindProxy,
-                                    test_setpropertyfromcommand.SetPropertyFromCommandPB):
+class ProxySetPropertyFromCommandPB(
+    RunMasterBehindProxy, test_setpropertyfromcommand.SetPropertyFromCommandPB
+):
     pass
 
 
-class ProxyTransferStepsMasterPb(RunMasterBehindProxy, test_transfer.TransferStepsMasterPb):
+class ProxyTransferStepsMasterPb(
+    RunMasterBehindProxy, test_transfer.TransferStepsMasterPb
+):
     pass
 
 
-class ProxyWorkerReconnect(RunMasterBehindProxy, test_worker_reconnect.WorkerReconnectPb):
+class ProxyWorkerReconnect(
+    RunMasterBehindProxy, test_worker_reconnect.WorkerReconnectPb
+):
     pass

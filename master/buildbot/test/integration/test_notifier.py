@@ -34,10 +34,11 @@ from buildbot.util import unicode2bytes
 # This integration test creates a master and worker environment,
 # with one builders and a shellcommand step, and a MailNotifier
 class NotifierMaster(RunMasterBase):
-
     if not ESMTPSenderFactory:
-        skip = ("twisted-mail unavailable, "
-                "see: https://twistedmatrix.com/trac/ticket/8770")
+        skip = (
+            "twisted-mail unavailable, "
+            "see: https://twistedmatrix.com/trac/ticket/8770"
+        )
 
     @defer.inlineCallbacks
     def create_master_config(self, build_set_summary=False):
@@ -52,53 +53,53 @@ class NotifierMaster(RunMasterBase):
         # patch MailNotifier.sendmail to know when the mail has been sent
         def sendMail(_, mail, recipients):
             self.mailDeferred.callback((mail.as_string(), recipients))
+
         self.patch(MailNotifier, "sendMail", sendMail)
 
         self.notification = defer.Deferred()
 
         def sendNotification(_, params):
             self.notification.callback(params)
+
         self.patch(PushoverNotifier, "sendNotification", sendNotification)
 
         c = {}
-        c['schedulers'] = [
-            schedulers.AnyBranchScheduler(
-                name="sched",
-                builderNames=["testy"])
+        c["schedulers"] = [
+            schedulers.AnyBranchScheduler(name="sched", builderNames=["testy"])
         ]
         f = BuildFactory()
-        f.addStep(steps.ShellCommand(command='echo hello'))
-        c['builders'] = [
-            BuilderConfig(name="testy",
-                          workernames=["local1"],
-                          factory=f)
-        ]
+        f.addStep(steps.ShellCommand(command="echo hello"))
+        c["builders"] = [BuilderConfig(name="testy", workernames=["local1"], factory=f)]
 
-        formatter = MessageFormatter(template='This is a message.')
-        formatter_worker = MessageFormatterMissingWorker(template='No worker.')
+        formatter = MessageFormatter(template="This is a message.")
+        formatter_worker = MessageFormatterMissingWorker(template="No worker.")
 
         if build_set_summary:
             generators_mail = [
-                BuildSetStatusGenerator(mode='all'),
-                WorkerMissingGenerator(workers='all'),
+                BuildSetStatusGenerator(mode="all"),
+                WorkerMissingGenerator(workers="all"),
             ]
             generators_pushover = [
-                BuildSetStatusGenerator(mode='all', message_formatter=formatter),
-                WorkerMissingGenerator(workers=['local1'], message_formatter=formatter_worker),
+                BuildSetStatusGenerator(mode="all", message_formatter=formatter),
+                WorkerMissingGenerator(
+                    workers=["local1"], message_formatter=formatter_worker
+                ),
             ]
         else:
             generators_mail = [
-                BuildStatusGenerator(mode='all'),
-                WorkerMissingGenerator(workers='all'),
+                BuildStatusGenerator(mode="all"),
+                WorkerMissingGenerator(workers="all"),
             ]
             generators_pushover = [
-                BuildStatusGenerator(mode='all', message_formatter=formatter),
-                WorkerMissingGenerator(workers=['local1'], message_formatter=formatter_worker),
+                BuildStatusGenerator(mode="all", message_formatter=formatter),
+                WorkerMissingGenerator(
+                    workers=["local1"], message_formatter=formatter_worker
+                ),
             ]
 
-        c['services'] = [
+        c["services"] = [
             reporters.MailNotifier("bot@foo.com", generators=generators_mail),
-            reporters.PushoverNotifier('1234', 'abcd', generators=generators_pushover)
+            reporters.PushoverNotifier("1234", "abcd", generators=generators_pushover),
         ]
 
         yield self.setup_master(c)
@@ -112,22 +113,29 @@ class NotifierMaster(RunMasterBase):
             "committer": "me@foo.com",
             "comments": "good stuff",
             "revision": "HEAD",
-            "project": "projectname"
+            "project": "projectname",
         }
         build = yield self.doForceBuild(wantSteps=True, useChange=change, wantLogs=True)
-        self.assertEqual(build['buildid'], 1)
+        self.assertEqual(build["buildid"], 1)
         mail, recipients = yield self.mailDeferred
         self.assertEqual(recipients, ["author@foo.com"])
         self.assertIn("From: bot@foo.com", mail)
-        self.assertIn(f"Subject: =?utf-8?q?=E2=98=BA_Buildbot_=28Buildbot=29=3A_{what}_-_build_successful_=28master=29?=\n",  # noqa pylint: disable=line-too-long
-                      mail)
-        self.assertEncodedIn("A passing build has been detected on builder testy while", mail)
+        self.assertIn(
+            f"Subject: =?utf-8?q?=E2=98=BA_Buildbot_=28Buildbot=29=3A_{what}_-_build_successful_=28master=29?=\n",  # noqa pylint: disable=line-too-long
+            mail,
+        )
+        self.assertEncodedIn(
+            "A passing build has been detected on builder testy while", mail
+        )
         params = yield self.notification
-        self.assertEqual(build['buildid'], 1)
-        self.assertEqual(params, {
-            'title': f"☺ Buildbot (Buildbot): {what} - build successful (master)",
-            'message': "This is a message."
-        })
+        self.assertEqual(build["buildid"], 1)
+        self.assertEqual(
+            params,
+            {
+                "title": f"☺ Buildbot (Buildbot): {what} - build successful (master)",
+                "message": "This is a message.",
+            },
+        )
 
     def assertEncodedIn(self, text, mail):
         # The default transfer encoding is base64 for utf-8 even when it could be represented
@@ -143,28 +151,33 @@ class NotifierMaster(RunMasterBase):
     @defer.inlineCallbacks
     def test_notifiy_for_build(self):
         yield self.create_master_config(build_set_summary=False)
-        yield self.doTest('testy')
+        yield self.doTest("testy")
 
     @defer.inlineCallbacks
     def test_notifiy_for_buildset(self):
         yield self.create_master_config(build_set_summary=True)
-        yield self.doTest('projectname')
+        yield self.doTest("projectname")
 
     @defer.inlineCallbacks
     def test_missing_worker(self):
         yield self.create_master_config(build_set_summary=False)
         yield self.master.data.updates.workerMissing(
-            workerid='local1',
+            workerid="local1",
             masterid=self.master.masterid,
-            last_connection='long time ago',
-            notify=['admin@worker.org'],
+            last_connection="long time ago",
+            notify=["admin@worker.org"],
         )
         mail, recipients = yield self.mailDeferred
         self.assertIn("From: bot@foo.com", mail)
-        self.assertEqual(recipients, ['admin@worker.org'])
+        self.assertEqual(recipients, ["admin@worker.org"])
         self.assertIn("Subject: Buildbot Buildbot worker local1 missing", mail)
         self.assertIn("disconnected at long time ago", mail)
         self.assertEncodedIn("worker named local1 went away", mail)
         params = yield self.notification
-        self.assertEqual(params, {'title': "Buildbot Buildbot worker local1 missing",
-                                  'message': b"No worker."})
+        self.assertEqual(
+            params,
+            {
+                "title": "Buildbot Buildbot worker local1 missing",
+                "message": b"No worker.",
+            },
+        )

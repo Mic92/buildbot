@@ -34,39 +34,53 @@ class TestChangeFilter(unittest.TestCase):
     test_cases = [
         (
             "match",
-            Change(project="p", codebase="c", repository="r", category="ct", branch="b"),
+            Change(
+                project="p", codebase="c", repository="r", category="ct", branch="b"
+            ),
             True,
         ),
         (
             "not_project",
-            Change(project="p0", codebase="c", repository="r", category="ct", branch="b"),
+            Change(
+                project="p0", codebase="c", repository="r", category="ct", branch="b"
+            ),
             False,
         ),
         (
             "not_codebase",
-            Change(project="p", codebase="c0", repository="r", category="ct", branch="b"),
+            Change(
+                project="p", codebase="c0", repository="r", category="ct", branch="b"
+            ),
             False,
         ),
         (
             "not_repository",
-            Change(project="p", codebase="c", repository="r0", category="ct", branch="b"),
+            Change(
+                project="p", codebase="c", repository="r0", category="ct", branch="b"
+            ),
             False,
         ),
         (
             "not_category",
-            Change(project="p", codebase="c", repository="r", category="ct0", branch="b"),
+            Change(
+                project="p", codebase="c", repository="r", category="ct0", branch="b"
+            ),
             False,
         ),
         (
             "not_branch",
-            Change(project="p", codebase="c", repository="r", category="ct", branch="b0"),
+            Change(
+                project="p", codebase="c", repository="r", category="ct", branch="b0"
+            ),
             False,
         ),
     ]
 
     @parameterized.expand(test_cases)
     def test_eq(self, name, change, expected):
-        f = ChangeFilter(project="p", codebase="c", repository="r", category="ct", branch="b")
+        f = ChangeFilter(
+            project="p", codebase="c", repository="r", category="ct", branch="b"
+        )
         self.assertEqual(f.filter_change(change), expected)
 
     @parameterized.expand(test_cases)
@@ -187,19 +201,29 @@ class TestChangeFilter(unittest.TestCase):
         self.assertFalse(f.filter_change(Change(branch=None)))
 
     def test_filter_change_combination(self):
-        f = ChangeFilter(project="p", repository="r", branch="b", category="c", codebase="cb")
-        self.assertFalse(
-            f.filter_change(Change(project="x", repository="x", branch="x", category="x"))
+        f = ChangeFilter(
+            project="p", repository="r", branch="b", category="c", codebase="cb"
         )
         self.assertFalse(
-            f.filter_change(Change(project="p", repository="r", branch="b", category="x"))
+            f.filter_change(
+                Change(project="x", repository="x", branch="x", category="x")
+            )
         )
         self.assertFalse(
-            f.filter_change(Change(project="p", repository="r", branch="b", category="c"))
+            f.filter_change(
+                Change(project="p", repository="r", branch="b", category="x")
+            )
+        )
+        self.assertFalse(
+            f.filter_change(
+                Change(project="p", repository="r", branch="b", category="c")
+            )
         )
         self.assertTrue(
             f.filter_change(
-                Change(project="p", repository="r", branch="b", category="c", codebase="cb")
+                Change(
+                    project="p", repository="r", branch="b", category="c", codebase="cb"
+                )
             )
         )
 
@@ -212,25 +236,41 @@ class TestChangeFilter(unittest.TestCase):
             filter_fn=lambda c: c.ff,
         )
         self.assertFalse(
-            f.filter_change(Change(project="x", repository="x", branch="x", category="x", ff=False))
+            f.filter_change(
+                Change(project="x", repository="x", branch="x", category="x", ff=False)
+            )
         )
         self.assertFalse(
-            f.filter_change(Change(project="p", repository="r", branch="b", category="c", ff=False))
+            f.filter_change(
+                Change(project="p", repository="r", branch="b", category="c", ff=False)
+            )
         )
         self.assertFalse(
-            f.filter_change(Change(project="x", repository="x", branch="x", category="x", ff=True))
+            f.filter_change(
+                Change(project="x", repository="x", branch="x", category="x", ff=True)
+            )
         )
         self.assertTrue(
-            f.filter_change(Change(project="p", repository="r", branch="b", category="c", ff=True))
+            f.filter_change(
+                Change(project="p", repository="r", branch="b", category="c", ff=True)
+            )
         )
 
     def test_filter_props(self):
         f = ChangeFilter(property_eq={"event.type": "ref-updated"})
-        self.assertTrue(f.filter_change(Change(properties={"event.type": "ref-updated"})))
-        self.assertFalse(f.filter_change(Change(properties={"event.type": "patch-uploaded"})))
+        self.assertTrue(
+            f.filter_change(Change(properties={"event.type": "ref-updated"}))
+        )
+        self.assertFalse(
+            f.filter_change(Change(properties={"event.type": "patch-uploaded"}))
+        )
         self.assertFalse(f.filter_change(Change(properties={})))
 
         f = ChangeFilter(property_re={"event.type": "^ref-updated$"})
-        self.assertTrue(f.filter_change(Change(properties={"event.type": "ref-updated"})))
-        self.assertFalse(f.filter_change(Change(properties={"event.type": "patch-uploaded"})))
+        self.assertTrue(
+            f.filter_change(Change(properties={"event.type": "ref-updated"}))
+        )
+        self.assertFalse(
+            f.filter_change(Change(properties={"event.type": "patch-uploaded"}))
+        )
         self.assertFalse(f.filter_change(Change(properties={})))

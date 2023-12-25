@@ -45,11 +45,11 @@ class Expect(object):
 
     def __str__(self):
         other_kwargs = self.kwargs.copy()
-        del other_kwargs['command']
-        del other_kwargs['workdir']
+        del other_kwargs["command"]
+        del other_kwargs["workdir"]
         return "Command: {0}\n  workdir: {1}\n  kwargs: {2}\n  result: {3}\n".format(
-            self.kwargs['command'], self.kwargs['workdir'],
-            other_kwargs, self.result)
+            self.kwargs["command"], self.kwargs["workdir"], other_kwargs, self.result
+        )
 
     def update(self, key, value):
         self.status_updates.append([(key, value)])
@@ -60,11 +60,11 @@ class Expect(object):
         return self
 
     def exit(self, rc_code):
-        self.result = ('c', rc_code)
+        self.result = ("c", rc_code)
         return self
 
     def exception(self, error):
-        self.result = ('e', error)
+        self.result = ("e", error)
         return self
 
 
@@ -98,13 +98,16 @@ class FakeRunProcess(object):
         have not taken place, this will raise the appropriate AssertionError.
         """
         if cls._expectations:
-            raise AssertionError(("{0} expected instances not created"
-                                  ).format(len(cls._expectations)))
+            raise AssertionError(
+                ("{0} expected instances not created").format(len(cls._expectations))
+            )
         del cls._expectations
 
-    def __init__(self, command_id, command, workdir, unicode_encoding, send_update, **kwargs):
-        kwargs['command'] = command
-        kwargs['workdir'] = workdir
+    def __init__(
+        self, command_id, command, workdir, unicode_encoding, send_update, **kwargs
+    ):
+        kwargs["command"] = command
+        kwargs["workdir"] = workdir
 
         # the default values for the constructor kwargs; if we got a default
         # value in **kwargs and didn't expect anything, well count that as OK
@@ -121,7 +124,7 @@ class FakeRunProcess(object):
             "keepStderr": False,
             "logEnviron": True,
             "logfiles": {},
-            "usePTY": False
+            "usePTY": False,
         }
 
         if not self._expectations:
@@ -135,54 +138,67 @@ class FakeRunProcess(object):
                     if key in default_values:
                         if default_values[key] == kwargs[key]:
                             continue  # default values are expected
-                        msg.append('{0}: expected default ({1!r}),\n  got {2!r}'.format(
-                                   key, default_values[key], kwargs[key]))
+                        msg.append(
+                            "{0}: expected default ({1!r}),\n  got {2!r}".format(
+                                key, default_values[key], kwargs[key]
+                            )
+                        )
                     else:
-                        msg.append('{0}: unexpected arg, value = {1!r}'.format(key, kwargs[key]))
+                        msg.append(
+                            "{0}: unexpected arg, value = {1!r}".format(
+                                key, kwargs[key]
+                            )
+                        )
                 elif key not in kwargs:
-                    msg.append('{0}: did not get expected arg'.format(key))
+                    msg.append("{0}: did not get expected arg".format(key))
                 elif exp.kwargs[key] != kwargs[key]:
-                    msg.append('{0}: expected {1!r},\n  got {2!r}'.format(key, exp.kwargs[key],
-                                                                          kwargs[key]))
+                    msg.append(
+                        "{0}: expected {1!r},\n  got {2!r}".format(
+                            key, exp.kwargs[key], kwargs[key]
+                        )
+                    )
             if msg:
                 msg.insert(
                     0,
-                    'did not get expected __init__ arguments for\n {0}'.format(
-                        " ".join(map(repr, kwargs.get('command',
-                                                      ['unknown command'])))))
-                self._expectations[:] = []  # don't expect any more instances, since we're failing
+                    "did not get expected __init__ arguments for\n {0}".format(
+                        " ".join(map(repr, kwargs.get("command", ["unknown command"])))
+                    ),
+                )
+                self._expectations[
+                    :
+                ] = []  # don't expect any more instances, since we're failing
                 raise AssertionError("\n".join(msg))
 
         self.send_update = send_update
-        self.stdout = ''
-        self.stderr = ''
+        self.stdout = ""
+        self.stderr = ""
 
     def start(self):
         # figure out the stdio-related parameters
-        keepStdout = self._exp.kwargs.get('keepStdout', False)
-        keepStderr = self._exp.kwargs.get('keepStderr', False)
-        sendStdout = self._exp.kwargs.get('sendStdout', True)
-        sendStderr = self._exp.kwargs.get('sendStderr', True)
+        keepStdout = self._exp.kwargs.get("keepStdout", False)
+        keepStderr = self._exp.kwargs.get("keepStderr", False)
+        sendStdout = self._exp.kwargs.get("sendStdout", True)
+        sendStderr = self._exp.kwargs.get("sendStderr", True)
         if keepStdout:
-            self.stdout = ''
+            self.stdout = ""
         if keepStderr:
-            self.stderr = ''
+            self.stderr = ""
         finish_immediately = True
 
         for update in self._exp.status_updates:
             data = []
             for key, value in update:
-                if key == 'stdout':
+                if key == "stdout":
                     if keepStdout:
                         self.stdout += value
                     if not sendStdout:
                         continue  # don't send this update
-                if key == 'stderr':
+                if key == "stderr":
                     if keepStderr:
                         self.stderr += value
                     if not sendStderr:
                         continue
-                if key == 'wait':
+                if key == "wait":
                     finish_immediately = False
                     continue
                 data.append((key, value))
@@ -196,12 +212,12 @@ class FakeRunProcess(object):
         return d
 
     def _finished(self):
-        if self._exp.result[0] == 'e':
+        if self._exp.result[0] == "e":
             self.run_deferred.errback(self._exp.result[1])
         else:
             self.run_deferred.callback(self._exp.result[1])
 
     def kill(self, reason):
-        self.send_update([('header', 'killing')])
-        self.send_update([('rc', -1)])
+        self.send_update([("header", "killing")])
+        self.send_update([("rc", -1)])
         self.run_deferred.callback(-1)

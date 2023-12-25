@@ -19,15 +19,15 @@ from buildbot.configurators import ConfiguratorBase
 from buildbot.test.util import configurators
 
 
-class ConfiguratorBaseTests(configurators.ConfiguratorMixin, unittest.SynchronousTestCase):
+class ConfiguratorBaseTests(
+    configurators.ConfiguratorMixin, unittest.SynchronousTestCase
+):
     ConfiguratorClass = ConfiguratorBase
 
     def test_basic(self):
         self.setupConfigurator()
-        self.assertEqual(self.config_dict, {
-            'schedulers': [],
-            'protocols': {},
-            'workers': [],
-            'builders': []
-        })
+        self.assertEqual(
+            self.config_dict,
+            {"schedulers": [], "protocols": {}, "workers": [], "builders": []},
+        )
         self.assertEqual(self.configurator.workers, [])

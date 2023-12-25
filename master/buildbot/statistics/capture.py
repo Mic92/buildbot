@@ -41,10 +41,7 @@ class Capture:
         self.master = None
 
     def _defaultContext(self, msg, builder_name):
-        return {
-            "builder_name": builder_name,
-            "build_number": str(msg['number'])
-        }
+        return {"builder_name": builder_name, "build_number": str(msg["number"])}
 
     @abc.abstractmethod
     def consume(self, routingKey, msg):
@@ -53,8 +50,9 @@ class Capture:
     @defer.inlineCallbacks
     def _store(self, post_data, series_name, context):
         for svc in self.parent_svcs:
-            yield threads.deferToThread(svc.thd_postStatsValue, post_data, series_name,
-                                        context)
+            yield threads.deferToThread(
+                svc.thd_postStatsValue, post_data, series_name, context
+            )
 
 
 class CapturePropertyBase(Capture):
@@ -83,14 +81,17 @@ class CapturePropertyBase(Capture):
         Consumer for this (CaptureProperty) class. Gets the properties from data api and
         send them to the storage backends.
         """
-        builder_info = yield self.master.data.get(("builders", msg['builderid']))
+        builder_info = yield self.master.data.get(("builders", msg["builderid"]))
 
         if self._builder_name_matches(builder_info):
-            properties = yield self.master.data.get(("builds", msg['buildid'], "properties"))
+            properties = yield self.master.data.get(
+                ("builds", msg["buildid"], "properties")
+            )
 
             if self._regex:
                 filtered_prop_names = [
-                    pn for pn in properties if re.match(self._property_name, pn)]
+                    pn for pn in properties if re.match(self._property_name, pn)
+                ]
             else:
                 filtered_prop_names = [self._property_name]
 
@@ -98,16 +99,15 @@ class CapturePropertyBase(Capture):
                 try:
                     ret_val = self._callback(properties, pn)
                 except KeyError as e:
-                    raise CaptureCallbackError("CaptureProperty failed."
-                                               f" The property {pn} not found for build number "
-                                               f"{msg['number']} on"
-                                               f" builder {builder_info['name']}.") from e
-                context = self._defaultContext(msg, builder_info['name'])
+                    raise CaptureCallbackError(
+                        "CaptureProperty failed."
+                        f" The property {pn} not found for build number "
+                        f"{msg['number']} on"
+                        f" builder {builder_info['name']}."
+                    ) from e
+                context = self._defaultContext(msg, builder_info["name"])
                 series_name = f"{builder_info['name']}-{pn}"
-                post_data = {
-                    "name": pn,
-                    "value": ret_val
-                }
+                post_data = {"name": pn, "value": ret_val}
                 yield self._store(post_data, series_name, context)
 
         else:
@@ -131,7 +131,7 @@ class CaptureProperty(CapturePropertyBase):
         super().__init__(property_name, callback, regex)
 
     def _builder_name_matches(self, builder_info):
-        return self._builder_name == builder_info['name']
+        return self._builder_name == builder_info["name"]
 
 
 class CapturePropertyAllBuilders(CapturePropertyBase):
@@ -162,21 +162,21 @@ class CaptureBuildTimes(Capture):
         """
         Consumer for CaptureBuildStartTime. Gets the build start time.
         """
-        builder_info = yield self.master.data.get(("builders", msg['builderid']))
+        builder_info = yield self.master.data.get(("builders", msg["builderid"]))
         if self._builder_name_matches(builder_info):
             try:
                 ret_val = self._callback(*self._retValParams(msg))
             except Exception as e:
                 # catching generic exceptions is okay here since we propagate
                 # it
-                raise CaptureCallbackError(f"{self._err_msg(msg, builder_info['name'])} "
-                                           f"Exception raised: {type(e).__name__} "
-                                           f"with message: {str(e)}") from e
+                raise CaptureCallbackError(
+                    f"{self._err_msg(msg, builder_info['name'])} "
+                    f"Exception raised: {type(e).__name__} "
+                    f"with message: {str(e)}"
+                ) from e
 
-            context = self._defaultContext(msg, builder_info['name'])
-            post_data = {
-                self._time_type: ret_val
-            }
+            context = self._defaultContext(msg, builder_info["name"])
+            post_data = {self._time_type: ret_val}
             series_name = f"{builder_info['name']}-build-times"
             yield self._store(post_data, series_name, context)
 
@@ -184,8 +184,10 @@ class CaptureBuildTimes(Capture):
             yield defer.succeed(None)
 
     def _err_msg(self, build_data, builder_name):
-        msg = (f"{self.__class__.__name__} failed on build {build_data['number']} "
-               f"on builder {builder_name}.")
+        msg = (
+            f"{self.__class__.__name__} failed on build {build_data['number']} "
+            f"on builder {builder_name}."
+        )
         return msg
 
     @abc.abstractmethod
@@ -206,15 +208,16 @@ class CaptureBuildStartTime(CaptureBuildTimes):
     def __init__(self, builder_name, callback=None):
         def default_callback(start_time):
             return start_time.isoformat()
+
         if not callback:
             callback = default_callback
         super().__init__(builder_name, callback, "start-time")
 
     def _retValParams(self, msg):
-        return [msg['started_at']]
+        return [msg["started_at"]]
 
     def _builder_name_matches(self, builder_info):
-        return self._builder_name == builder_info['name']
+        return self._builder_name == builder_info["name"]
 
 
 class CaptureBuildStartTimeAllBuilders(CaptureBuildStartTime):
@@ -240,15 +243,16 @@ class CaptureBuildEndTime(CaptureBuildTimes):
     def __init__(self, builder_name, callback=None):
         def default_callback(end_time):
             return end_time.isoformat()
+
         if not callback:
             callback = default_callback
         super().__init__(builder_name, callback, "end-time")
 
     def _retValParams(self, msg):
-        return [msg['complete_at']]
+        return [msg["complete_at"]]
 
     def _builder_name_matches(self, builder_info):
-        return self._builder_name == builder_info['name']
+        return self._builder_name == builder_info["name"]
 
 
 class CaptureBuildEndTimeAllBuilders(CaptureBuildEndTime):
@@ -271,17 +275,19 @@ class CaptureBuildDuration(CaptureBuildTimes):
     Capture methods for capturing build start times.
     """
 
-    def __init__(self, builder_name, report_in='seconds', callback=None):
-        if report_in not in ['seconds', 'minutes', 'hours']:
-            config.error(f"Error during initialization of class {self.__class__.__name__}."
-                         " `report_in` parameter must be one of 'seconds', 'minutes' or 'hours'")
+    def __init__(self, builder_name, report_in="seconds", callback=None):
+        if report_in not in ["seconds", "minutes", "hours"]:
+            config.error(
+                f"Error during initialization of class {self.__class__.__name__}."
+                " `report_in` parameter must be one of 'seconds', 'minutes' or 'hours'"
+            )
 
         def default_callback(start_time, end_time):
             divisor = 1
             # it's a closure
-            if report_in == 'minutes':
+            if report_in == "minutes":
                 divisor = 60
-            elif report_in == 'hours':
+            elif report_in == "hours":
                 divisor = 60 * 60
             if end_time < start_time:
                 duration = datetime.timedelta(0)
@@ -294,10 +300,10 @@ class CaptureBuildDuration(CaptureBuildTimes):
         super().__init__(builder_name, callback, "duration")
 
     def _retValParams(self, msg):
-        return [msg['started_at'], msg['complete_at']]
+        return [msg["started_at"], msg["complete_at"]]
 
     def _builder_name_matches(self, builder_info):
-        return self._builder_name == builder_info['name']
+        return self._builder_name == builder_info["name"]
 
 
 class CaptureBuildDurationAllBuilders(CaptureBuildDuration):
@@ -306,7 +312,7 @@ class CaptureBuildDurationAllBuilders(CaptureBuildDuration):
     Capture methods for capturing build durations on all builders.
     """
 
-    def __init__(self, report_in='seconds', callback=None):
+    def __init__(self, report_in="seconds", callback=None):
         super().__init__(None, report_in, callback)
 
     def _builder_name_matches(self, builder_info):
@@ -341,20 +347,25 @@ class CaptureDataBase(Capture):
         Consumer for this (CaptureData) class. Gets the data sent from yieldMetricsValue and
         sends it to the storage backends.
         """
-        build_data = msg['build_data']
-        builder_info = yield self.master.data.get(("builders", build_data['builderid']))
+        build_data = msg["build_data"]
+        builder_info = yield self.master.data.get(("builders", build_data["builderid"]))
 
-        if self._builder_name_matches(builder_info) and self._data_name == msg['data_name']:
+        if (
+            self._builder_name_matches(builder_info)
+            and self._data_name == msg["data_name"]
+        ):
             try:
-                ret_val = self._callback(msg['post_data'])
+                ret_val = self._callback(msg["post_data"])
             except Exception as e:
-                raise CaptureCallbackError(f"CaptureData failed for build {build_data['number']} "
-                                           f"of builder {builder_info['name']}. "
-                                           f"Exception generated: {type(e).__name__} "
-                                           f"with message {str(e)}") from e
+                raise CaptureCallbackError(
+                    f"CaptureData failed for build {build_data['number']} "
+                    f"of builder {builder_info['name']}. "
+                    f"Exception generated: {type(e).__name__} "
+                    f"with message {str(e)}"
+                ) from e
             post_data = ret_val
             series_name = f"{builder_info['name']}-{self._data_name}"
-            context = self._defaultContext(build_data, builder_info['name'])
+            context = self._defaultContext(build_data, builder_info["name"])
             yield self._store(post_data, series_name, context)
 
     @abc.abstractmethod
@@ -374,7 +385,7 @@ class CaptureData(CaptureDataBase):
         super().__init__(data_name, callback)
 
     def _builder_name_matches(self, builder_info):
-        return self._builder_name == builder_info['name']
+        return self._builder_name == builder_info["name"]
 
 
 class CaptureDataAllBuilders(CaptureDataBase):

@@ -35,41 +35,38 @@ class MockFileBase:
     file_mock_config = {}
 
     def setUp(self):
-        self.patcher = mock.patch('buildbot.util.kubeclientservice.open',
-                                  self.mock_open)
+        self.patcher = mock.patch(
+            "buildbot.util.kubeclientservice.open", self.mock_open
+        )
         self.patcher.start()
 
     def tearDown(self):
         self.patcher.stop()
 
-    def mock_open(self, filename, mode=None, encoding='UTF-8'):
+    def mock_open(self, filename, mode=None, encoding="UTF-8"):
         filename_type = os.path.basename(filename)
         file_value = self.file_mock_config[filename_type]
         mock_open = mock.Mock(
-            __enter__=mock.Mock(return_value=StringIO(file_value)),
-            __exit__=mock.Mock())
+            __enter__=mock.Mock(return_value=StringIO(file_value)), __exit__=mock.Mock()
+        )
         return mock_open
 
 
 class KubeClientServiceTestClusterConfig(
-        MockFileBase, config.ConfigErrorsMixin, unittest.TestCase):
-
-    file_mock_config = {
-        'token': 'BASE64_TOKEN',
-        'namespace': 'buildbot_namespace'
-    }
+    MockFileBase, config.ConfigErrorsMixin, unittest.TestCase
+):
+    file_mock_config = {"token": "BASE64_TOKEN", "namespace": "buildbot_namespace"}
 
     def setUp(self):
         super().setUp()
-        self.patch(kubeclientservice.os, 'environ',
-                   {'KUBERNETES_PORT': 'tcp://foo'})
+        self.patch(kubeclientservice.os, "environ", {"KUBERNETES_PORT": "tcp://foo"})
 
     def patchExist(self, val):
-        self.patch(kubeclientservice.os.path, 'exists', lambda x: val)
+        self.patch(kubeclientservice.os.path, "exists", lambda x: val)
 
     def test_not_exists(self):
         self.patchExist(False)
-        with self.assertRaisesConfigError('kube_dir not found:'):
+        with self.assertRaisesConfigError("kube_dir not found:"):
             kubeclientservice.KubeInClusterConfigLoader()
 
     @defer.inlineCallbacks
@@ -78,15 +75,14 @@ class KubeClientServiceTestClusterConfig(
         config = kubeclientservice.KubeInClusterConfigLoader()
         yield config.startService()
         self.assertEqual(
-            config.getConfig(), {
-                'headers': {
-                    'Authorization': 'Bearer BASE64_TOKEN'
-                },
-                'master_url': 'https://foo',
-                'namespace': 'buildbot_namespace',
-                'verify':
-                '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
-            })
+            config.getConfig(),
+            {
+                "headers": {"Authorization": "Bearer BASE64_TOKEN"},
+                "master_url": "https://foo",
+                "namespace": "buildbot_namespace",
+                "verify": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+            },
+        )
 
 
 KUBE_CTL_PROXY_FAKE = """
@@ -109,31 +105,28 @@ sys.exit(1)
 
 
 class KubeClientServiceTestKubeHardcodedConfig(
-    TestReactorMixin,
-    config.ConfigErrorsMixin,
-    unittest.TestCase
+    TestReactorMixin, config.ConfigErrorsMixin, unittest.TestCase
 ):
-
     @defer.inlineCallbacks
     def setUp(self):
         self.setup_test_reactor()
         self.master = fakemaster.make_master(self)
         self._http = yield fakehttpclientservice.HTTPClientService.getService(
-            self.master,
-            self,
-            "http://localhost:8001"
+            self.master, self, "http://localhost:8001"
         )
 
     def test_basic(self):
         self.config = kubeclientservice.KubeHardcodedConfig(
-            master_url="http://localhost:8001",
-            namespace="default"
+            master_url="http://localhost:8001", namespace="default"
         )
-        self.assertEqual(self.config.getConfig(), {
-            'master_url': 'http://localhost:8001',
-            'namespace': 'default',
-            'headers': {}
-        })
+        self.assertEqual(
+            self.config.getConfig(),
+            {
+                "master_url": "http://localhost:8001",
+                "namespace": "default",
+                "headers": {},
+            },
+        )
 
     def test_cannot_pass_both_bearer_and_basic_auth(self):
         with self.assertRaises(Exception):
@@ -142,17 +135,22 @@ class KubeClientServiceTestKubeHardcodedConfig(
                 namespace="default",
                 verify="/path/to/pem",
                 basicAuth="Bla",
-                bearerToken="Bla")
+                bearerToken="Bla",
+            )
 
 
-class KubeClientServiceTestKubeCtlProxyConfig(config.ConfigErrorsMixin,
-                                              unittest.TestCase):
+class KubeClientServiceTestKubeCtlProxyConfig(
+    config.ConfigErrorsMixin, unittest.TestCase
+):
     def patchProxyCmd(self, cmd):
-        if runtime.platformType != 'posix':
+        if runtime.platformType != "posix":
             self.config = None
-            raise SkipTest('only posix platform is supported by this test')
-        self.patch(kubeclientservice.KubeCtlProxyConfigLoader,
-                   'kube_ctl_proxy_cmd', [sys.executable, "-c", cmd])
+            raise SkipTest("only posix platform is supported by this test")
+        self.patch(
+            kubeclientservice.KubeCtlProxyConfigLoader,
+            "kube_ctl_proxy_cmd",
+            [sys.executable, "-c", cmd],
+        )
 
     def tearDown(self):
         if self.config is not None and self.config.running:
@@ -164,48 +162,49 @@ class KubeClientServiceTestKubeCtlProxyConfig(config.ConfigErrorsMixin,
         self.patchProxyCmd(KUBE_CTL_PROXY_FAKE)
         self.config = kubeclientservice.KubeCtlProxyConfigLoader()
         yield self.config.startService()
-        self.assertEqual(self.config.getConfig(), {
-            'master_url': 'http://localhost:8001',
-            'namespace': 'default'
-        })
+        self.assertEqual(
+            self.config.getConfig(),
+            {"master_url": "http://localhost:8001", "namespace": "default"},
+        )
 
     @defer.inlineCallbacks
     def test_config_args(self):
         self.patchProxyCmd(KUBE_CTL_PROXY_FAKE)
         self.config = kubeclientservice.KubeCtlProxyConfigLoader(
-            proxy_port=8002,
-            namespace="system"
+            proxy_port=8002, namespace="system"
         )
         yield self.config.startService()
-        self.assertEqual(self.config.kube_proxy_output,
-                         b'Starting to serve on 127.0.0.1:8002')
-        self.assertEqual(self.config.getConfig(), {
-            'master_url': 'http://localhost:8002',
-            'namespace': 'system'
-        })
+        self.assertEqual(
+            self.config.kube_proxy_output, b"Starting to serve on 127.0.0.1:8002"
+        )
+        self.assertEqual(
+            self.config.getConfig(),
+            {"master_url": "http://localhost:8002", "namespace": "system"},
+        )
         yield self.config.stopService()
 
     @defer.inlineCallbacks
     def test_reconfig(self):
         self.patchProxyCmd(KUBE_CTL_PROXY_FAKE)
         self.config = kubeclientservice.KubeCtlProxyConfigLoader(
-            proxy_port=8002,
-            namespace="system"
+            proxy_port=8002, namespace="system"
         )
         yield self.config.startService()
-        self.assertEqual(self.config.kube_proxy_output,
-                         b'Starting to serve on 127.0.0.1:8002')
-        self.assertEqual(self.config.getConfig(), {
-            'master_url': 'http://localhost:8002',
-            'namespace': 'system'
-        })
+        self.assertEqual(
+            self.config.kube_proxy_output, b"Starting to serve on 127.0.0.1:8002"
+        )
+        self.assertEqual(
+            self.config.getConfig(),
+            {"master_url": "http://localhost:8002", "namespace": "system"},
+        )
         yield self.config.reconfigService(proxy_port=8003, namespace="system2")
-        self.assertEqual(self.config.kube_proxy_output,
-                         b'Starting to serve on 127.0.0.1:8003')
-        self.assertEqual(self.config.getConfig(), {
-            'master_url': 'http://localhost:8003',
-            'namespace': 'system2'
-        })
+        self.assertEqual(
+            self.config.kube_proxy_output, b"Starting to serve on 127.0.0.1:8003"
+        )
+        self.assertEqual(
+            self.config.getConfig(),
+            {"master_url": "http://localhost:8003", "namespace": "system2"},
+        )
         yield self.config.stopService()
 
     @defer.inlineCallbacks
@@ -217,7 +216,6 @@ class KubeClientServiceTestKubeCtlProxyConfig(config.ConfigErrorsMixin,
 
 
 class KubeClientServiceTest(unittest.TestCase):
-
     @defer.inlineCallbacks
     def setUp(self):
         self.parent = service.BuildbotService(name="parent")

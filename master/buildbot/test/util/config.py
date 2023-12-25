@@ -37,7 +37,6 @@ class _AssertRaisesConfigErrorContext:
 
 
 class ConfigErrorsMixin:
-
     def assertConfigError(self, errors, substr_or_re):
         if len(errors.errors) > 1:
             self.fail(f"too many errors: {errors.errors}")
@@ -47,7 +46,9 @@ class ConfigErrorsMixin:
             curr_error = errors.errors[0]
             if isinstance(substr_or_re, str):
                 if substr_or_re not in curr_error:
-                    self.fail(f"non-matching error: {curr_error}, expected: {substr_or_re}")
+                    self.fail(
+                        f"non-matching error: {curr_error}, expected: {substr_or_re}"
+                    )
             else:
                 if not substr_or_re.search(curr_error):
                     self.fail(f"non-matching error: {curr_error}")

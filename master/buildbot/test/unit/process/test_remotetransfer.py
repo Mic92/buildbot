@@ -26,7 +26,6 @@ from buildbot.process import remotetransfer
 
 # Test buildbot.steps.remotetransfer.FileWriter class.
 class TestFileWriter(unittest.TestCase):
-
     # test FileWriter.__init__() method.
 
     def testInit(self):
@@ -40,7 +39,7 @@ class TestFileWriter(unittest.TestCase):
 
         # capture calls to os.makedirs()
         mockedMakedirs = Mock()
-        self.patch(os, 'makedirs', mockedMakedirs)
+        self.patch(os, "makedirs", mockedMakedirs)
 
         # capture calls to tempfile.mkstemp()
         mockedMkstemp = Mock(return_value=(7, "tmpname"))
@@ -62,15 +61,14 @@ class TestFileWriter(unittest.TestCase):
         absdir = os.path.dirname(os.path.abspath(os.path.join("dir", "file")))
         mockedExists.assert_called_once_with(absdir)
         mockedMakedirs.assert_called_once_with(absdir)
-        mockedMkstemp.assert_called_once_with(dir=absdir, prefix='buildbot-transfer-')
-        mockedFdopen.assert_called_once_with(7, 'wb')
+        mockedMkstemp.assert_called_once_with(dir=absdir, prefix="buildbot-transfer-")
+        mockedFdopen.assert_called_once_with(7, "wb")
 
 
 class TestStringFileWriter(unittest.TestCase):
-
     def testBasic(self):
         sfw = remotetransfer.StringFileWriter()
         # StringFileWriter takes bytes or native string and outputs native strings
-        sfw.remote_write(b'bytes')
-        sfw.remote_write(' or str')
-        self.assertEqual(sfw.buffer, 'bytes or str')
+        sfw.remote_write(b"bytes")
+        sfw.remote_write(" or str")
+        self.assertEqual(sfw.buffer, "bytes or str")

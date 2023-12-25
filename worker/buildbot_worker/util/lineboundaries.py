@@ -22,8 +22,7 @@ log = Logger()
 
 
 class LineBoundaryFinder:
-
-    __slots__ = ['max_line_length', 'newline_re', 'partial_line', 'warned', 'time']
+    __slots__ = ["max_line_length", "newline_re", "partial_line", "warned", "time"]
 
     def __init__(self, max_line_length, newline_re):
         # split at reasonable line length.
@@ -45,7 +44,7 @@ class LineBoundaryFinder:
             text = self.partial_line + text
             time_partial_line = self.time
 
-        text = self.newline_re.sub('\n', text)
+        text = self.newline_re.sub("\n", text)
 
         lf_positions = self.get_lf_positions(text)
 
@@ -59,14 +58,14 @@ class LineBoundaryFinder:
             # finds too long lines and splits them, each element in ret_lines will be a line of
             # appropriate length
             while position - first_position >= self.max_line_length:
-                line = text[first_position: self.max_line_length - 1] + '\n'
+                line = text[first_position : self.max_line_length - 1] + "\n"
                 ret_lines.append(line)
                 ret_line_count += 1
                 ret_text_length = ret_text_length + len(line)
                 ret_indexes.append(ret_text_length)
                 first_position = first_position + self.max_line_length
 
-            line = text[first_position: (position + 1)]
+            line = text[first_position : (position + 1)]
             ret_lines.append(line)
             ret_line_count += 1
             ret_text_length = ret_text_length + len(line)
@@ -75,7 +74,7 @@ class LineBoundaryFinder:
 
         position = len(text)
         while position - first_position >= self.max_line_length:
-            line = text[first_position: self.max_line_length - 1] + '\n'
+            line = text[first_position : self.max_line_length - 1] + "\n"
             ret_lines.append(line)
             ret_text_length = ret_text_length + len(line)
             ret_indexes.append(ret_text_length)
@@ -91,12 +90,12 @@ class LineBoundaryFinder:
 
         ret_text = "".join(ret_lines)
 
-        if ret_text != '' or not had_partial_line:
+        if ret_text != "" or not had_partial_line:
             self.time = time
 
-        self.partial_line = text[first_position: position]
+        self.partial_line = text[first_position:position]
 
-        if ret_text == '':
+        if ret_text == "":
             return None
 
         return (ret_text, ret_indexes, line_times)
@@ -105,7 +104,7 @@ class LineBoundaryFinder:
         lf_position = 0
         lf_positions = []
         while lf_position != -1:
-            lf_position = text.find('\n', lf_position)
+            lf_position = text.find("\n", lf_position)
             if lf_position < 0:
                 break
             lf_positions.append(lf_position)
@@ -114,5 +113,5 @@ class LineBoundaryFinder:
 
     def flush(self):
         if self.partial_line != "":
-            return self.append('\n', self.time)
+            return self.append("\n", self.time)
         return None

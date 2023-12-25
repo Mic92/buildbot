@@ -25,12 +25,11 @@ from buildbot.util import poll
 
 
 class TestPollerSync(TestReactorMixin, unittest.TestCase):
-
     @poll.method
     def poll(self):
         self.calls += 1
         if self.fail_after_running:
-            raise RuntimeError('oh noes')
+            raise RuntimeError("oh noes")
 
     def setUp(self):
         self.setup_test_reactor()
@@ -114,18 +113,22 @@ class TestPollerSync(TestReactorMixin, unittest.TestCase):
         self.assertEqual(len(self.flushLoggedErrors(RuntimeError)), 2)
         yield self.poll.stop()
 
-    @parameterized.expand([
-        ('shorter_than_interval_now_True', 5, True),
-        ('longer_than_interval_now_True', 15, True),
-        ('shorter_than_interval_now_False', 5, False),
-        ('longer_than_interval_now_False', 15, False),
-    ])
+    @parameterized.expand(
+        [
+            ("shorter_than_interval_now_True", 5, True),
+            ("longer_than_interval_now_True", 15, True),
+            ("shorter_than_interval_now_False", 5, False),
+            ("longer_than_interval_now_False", 15, False),
+        ]
+    )
     @defer.inlineCallbacks
     def test_run_with_random_delay(self, name, random_delay_max, now):
         interval = 10
 
         with mock.patch("buildbot.util.poll.randint", return_value=random_delay_max):
-            self.poll.start(interval=interval, now=now, random_delay_max=random_delay_max)
+            self.poll.start(
+                interval=interval, now=now, random_delay_max=random_delay_max
+            )
             self.reactor.advance(0)
 
             if not now:
@@ -143,10 +146,12 @@ class TestPollerSync(TestReactorMixin, unittest.TestCase):
             self.assertEqual(self.calls, 1)
         yield self.poll.stop()
 
-    @parameterized.expand([
-        ('now_True', True),
-        ('now_False', False),
-    ])
+    @parameterized.expand(
+        [
+            ("now_True", True),
+            ("now_False", False),
+        ]
+    )
     @defer.inlineCallbacks
     def test_run_with_random_delay_zero_interval_still_delays(self, name, now):
         random_delay_max = 5
@@ -175,7 +180,6 @@ class TestPollerSync(TestReactorMixin, unittest.TestCase):
 
 
 class TestPollerAsync(TestReactorMixin, unittest.TestCase):
-
     @poll.method
     @defer.inlineCallbacks
     def poll(self):
@@ -190,7 +194,7 @@ class TestPollerAsync(TestReactorMixin, unittest.TestCase):
         self.running = False
 
         if self.fail_after_running:
-            raise RuntimeError('oh noes')
+            raise RuntimeError("oh noes")
 
     def setUp(self):
         self.setup_test_reactor()
@@ -218,9 +222,9 @@ class TestPollerAsync(TestReactorMixin, unittest.TestCase):
         yield self.poll.stop()
 
     def test_repeats_and_stops(self):
-        """ Polling repeats until stopped, and stop returns a Deferred.  The
+        """Polling repeats until stopped, and stop returns a Deferred.  The
         duration of the function's execution does not affect the execution
-        interval: executions occur every 10 seconds.  """
+        interval: executions occur every 10 seconds."""
         self.poll.start(interval=10, now=True)
         self.reactor.advance(0)
 
@@ -236,10 +240,12 @@ class TestPollerAsync(TestReactorMixin, unittest.TestCase):
         self.reactor.advance(10)
         self.assertEqual(self.calls, 21)
 
-    @parameterized.expand([
-        ('now_True', True),
-        ('now_False', False),
-    ])
+    @parameterized.expand(
+        [
+            ("now_True", True),
+            ("now_False", False),
+        ]
+    )
     @defer.inlineCallbacks
     def test_zero_interval_starts_immediately(self, name, now):
         self.poll.start(interval=0, now=now)
@@ -398,18 +404,22 @@ class TestPollerAsync(TestReactorMixin, unittest.TestCase):
             self.assertEqual(self.running, running)
             self.assertEqual(self.calls, calls)
 
-    @parameterized.expand([
-        ('shorter_than_interval_now_True', 5, True),
-        ('longer_than_interval_now_True', 15, True),
-        ('shorter_than_interval_now_False', 5, False),
-        ('longer_than_interval_now_False', 15, False),
-    ])
+    @parameterized.expand(
+        [
+            ("shorter_than_interval_now_True", 5, True),
+            ("longer_than_interval_now_True", 15, True),
+            ("shorter_than_interval_now_False", 5, False),
+            ("longer_than_interval_now_False", 15, False),
+        ]
+    )
     @defer.inlineCallbacks
     def test_run_with_random_delay(self, name, random_delay_max, now):
         interval = 10
 
         with mock.patch("buildbot.util.poll.randint", return_value=random_delay_max):
-            self.poll.start(interval=interval, now=now, random_delay_max=random_delay_max)
+            self.poll.start(
+                interval=interval, now=now, random_delay_max=random_delay_max
+            )
             self.reactor.advance(0)
 
             if not now:
@@ -434,10 +444,12 @@ class TestPollerAsync(TestReactorMixin, unittest.TestCase):
             self.assertFalse(self.running)
         yield self.poll.stop()
 
-    @parameterized.expand([
-        ('now_True', True),
-        ('now_False', False),
-    ])
+    @parameterized.expand(
+        [
+            ("now_True", True),
+            ("now_False", False),
+        ]
+    )
     @defer.inlineCallbacks
     def test_run_with_random_delay_zero_interval_still_delays(self, name, now):
         random_delay_max = 5

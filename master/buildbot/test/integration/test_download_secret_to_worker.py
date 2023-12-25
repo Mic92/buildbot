@@ -29,7 +29,6 @@ from buildbot.test.util.integration import RunMasterBase
 
 
 class DownloadSecretsBase(RunMasterBase):
-
     def setUp(self):
         self.temp_dir = os.path.abspath(self.mktemp())
         os.mkdir(self.temp_dir)
@@ -38,37 +37,34 @@ class DownloadSecretsBase(RunMasterBase):
     def setup_config(self, path, data, remove=False):
         c = {}
 
-        c['schedulers'] = [
-            ForceScheduler(name="force", builderNames=["testy"])
-        ]
+        c["schedulers"] = [ForceScheduler(name="force", builderNames=["testy"])]
 
         f = BuildFactory()
         f.addStep(DownloadSecretsToWorker([(path, data)]))
         if remove:
             f.addStep(RemoveWorkerFileSecret([(path, data)]))
 
-        c['builders'] = [
-            BuilderConfig(name="testy", workernames=["local1"], factory=f)
-        ]
+        c["builders"] = [BuilderConfig(name="testy", workernames=["local1"], factory=f)]
 
         yield self.setup_master(c)
 
     def get_homedir(self):
-        path = os.path.expanduser('~')
-        if path == '~':
+        path = os.path.expanduser("~")
+        if path == "~":
             return None
         return path
 
-    @parameterized.expand([
-        ('simple', False, True),
-        ('relative_to_home', True, True),
-        ('simple_remove', False, True),
-        ('relative_to_home_remove', True, True),
-    ])
+    @parameterized.expand(
+        [
+            ("simple", False, True),
+            ("relative_to_home", True, True),
+            ("simple_remove", False, True),
+            ("relative_to_home_remove", True, True),
+        ]
+    )
     @defer.inlineCallbacks
     def test_transfer_secrets(self, name, relative_to_home, remove):
-
-        path = os.path.join(self.temp_dir, 'secret_path')
+        path = os.path.join(self.temp_dir, "secret_path")
 
         bb_path = path
         if relative_to_home:
@@ -76,13 +72,15 @@ class DownloadSecretsBase(RunMasterBase):
             if homedir is None:
                 raise SkipTest("Home directory is not known")
             try:
-                bb_path = os.path.join('~', os.path.relpath(path, homedir))
+                bb_path = os.path.join("~", os.path.relpath(path, homedir))
             except ValueError as e:
-                raise SkipTest("Can't get relative path from home directory to test files") from e
+                raise SkipTest(
+                    "Can't get relative path from home directory to test files"
+                ) from e
             if not os.path.isdir(os.path.expanduser(bb_path)):
                 raise SkipTest("Unknown error preparing test paths")
 
-        data = 'some data'
+        data = "some data"
 
         yield self.setup_config(bb_path, data, remove=remove)
 
@@ -92,7 +90,7 @@ class DownloadSecretsBase(RunMasterBase):
             self.assertFalse(os.path.exists(path))
         else:
             self.assertTrue(os.path.isfile(path))
-            with open(path, encoding='utf-8') as f:
+            with open(path, encoding="utf-8") as f:
                 self.assertEqual(f.read(), data)
 
 

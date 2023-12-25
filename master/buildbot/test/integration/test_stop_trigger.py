@@ -40,41 +40,40 @@ class TriggeringMaster(RunMasterBase):
         "committer": "me@foo.com",
         "comments": "good stuff",
         "revision": "HEAD",
-        "project": "none"
+        "project": "none",
     }
 
     @defer.inlineCallbacks
     def setup_trigger_config(self, triggeredFactory, nextBuild=None):
         c = {}
 
-        c['schedulers'] = [
-            schedulers.Triggerable(
-                name="trigsched",
-                builderNames=["triggered"]),
-            schedulers.AnyBranchScheduler(
-                name="sched",
-                builderNames=["main"])]
+        c["schedulers"] = [
+            schedulers.Triggerable(name="trigsched", builderNames=["triggered"]),
+            schedulers.AnyBranchScheduler(name="sched", builderNames=["main"]),
+        ]
 
         f = BuildFactory()
-        f.addStep(steps.Trigger(schedulerNames=['trigsched'],
-                                waitForFinish=True,
-                                updateSourceStamp=True))
-        f.addStep(steps.ShellCommand(command='echo world'))
+        f.addStep(
+            steps.Trigger(
+                schedulerNames=["trigsched"], waitForFinish=True, updateSourceStamp=True
+            )
+        )
+        f.addStep(steps.ShellCommand(command="echo world"))
 
-        mainBuilder = BuilderConfig(name="main",
-                                    workernames=["local1"],
-                                    factory=f)
+        mainBuilder = BuilderConfig(name="main", workernames=["local1"], factory=f)
 
-        triggeredBuilderKwargs = {'name': "triggered",
-                                  'workernames': ["local1"],
-                                  'factory': triggeredFactory}
+        triggeredBuilderKwargs = {
+            "name": "triggered",
+            "workernames": ["local1"],
+            "factory": triggeredFactory,
+        }
 
         if nextBuild is not None:
-            triggeredBuilderKwargs['nextBuild'] = nextBuild
+            triggeredBuilderKwargs["nextBuild"] = nextBuild
 
         triggeredBuilder = BuilderConfig(**triggeredBuilderKwargs)
 
-        c['builders'] = [mainBuilder, triggeredBuilder]
+        c["builders"] = [mainBuilder, triggeredBuilder]
         yield self.setup_master(c)
 
     @defer.inlineCallbacks
@@ -82,21 +81,23 @@ class TriggeringMaster(RunMasterBase):
         f2 = BuildFactory()
 
         # Infinite sleep command.
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             # Ping localhost infinitely.
             # There are other options, however they either don't work in
             # non-interactive mode (e.g. 'pause'), or doesn't available on all
             # Windows versions (e.g. 'timeout' and 'choice' are available
             # starting from Windows 7).
-            cmd = 'ping -t 127.0.0.1'.split()
+            cmd = "ping -t 127.0.0.1".split()
         else:
-            cmd = textwrap.dedent("""\
+            cmd = textwrap.dedent(
+                """\
                 while :
                 do
                   echo "sleeping";
                   sleep 1;
                 done
-                """)
+                """
+            )
 
         f2.addStep(steps.ShellCommand(command=cmd))
 
@@ -109,20 +110,21 @@ class TriggeringMaster(RunMasterBase):
 
         def nextBuild(*args, **kwargs):
             return defer.succeed(None)
+
         yield self.setup_trigger_config(f2, nextBuild=nextBuild)
 
     def assertBuildIsCancelled(self, b):
-        self.assertTrue(b['complete'])
-        self.assertEqual(b['results'], CANCELLED, repr(b))
+        self.assertTrue(b["complete"])
+        self.assertEqual(b["results"], CANCELLED, repr(b))
 
     @defer.inlineCallbacks
     def runTest(self, newBuildCallback, flushErrors=False):
         newConsumer = yield self.master.mq.startConsuming(
-            newBuildCallback,
-            ('builds', None, 'new'))
-        build = yield self.doForceBuild(wantSteps=True,
-                                        useChange=self.change,
-                                        wantLogs=True)
+            newBuildCallback, ("builds", None, "new")
+        )
+        build = yield self.doForceBuild(
+            wantSteps=True, useChange=self.change, wantLogs=True
+        )
         self.assertBuildIsCancelled(build)
         newConsumer.stopConsuming()
         builds = yield self.master.data.get(("builds",))
@@ -138,11 +140,11 @@ class TriggeringMaster(RunMasterBase):
 
         def newCallback(_, data):
             if self.higherBuild is None:
-                self.higherBuild = data['buildid']
+                self.higherBuild = data["buildid"]
             else:
-                self.master.data.control(
-                    "stop", {}, ("builds", self.higherBuild))
+                self.master.data.control("stop", {}, ("builds", self.higherBuild))
                 self.higherBuild = None
+
         yield self.runTest(newCallback, flushErrors=True)
 
     @defer.inlineCallbacks
@@ -152,13 +154,13 @@ class TriggeringMaster(RunMasterBase):
 
         def newCallback(_, data):
             if self.higherBuild is None:
-                self.higherBuild = data['buildid']
+                self.higherBuild = data["buildid"]
             else:
 
                 def f():
-                    self.master.data.control(
-                        "stop", {}, ("builds", self.higherBuild))
+                    self.master.data.control("stop", {}, ("builds", self.higherBuild))
                     self.higherBuild = None
+
                 reactor.callLater(5.0, f)
 
         yield self.runTest(newCallback, flushErrors=True)
@@ -168,5 +170,6 @@ class TriggeringMaster(RunMasterBase):
         yield self.setup_config_triggered_build_not_created()
 
         def newCallback(_, data):
-            self.master.data.control("stop", {}, ("builds", data['buildid']))
+            self.master.data.control("stop", {}, ("builds", data["buildid"]))
+
         yield self.runTest(newCallback)

@@ -32,17 +32,13 @@ class TestLog(RunMasterBase):
         from buildbot.plugins import schedulers
         from buildbot.process.factory import BuildFactory
 
-        c['schedulers'] = [
-            schedulers.AnyBranchScheduler(
-                name="sched",
-                builderNames=["testy"])]
+        c["schedulers"] = [
+            schedulers.AnyBranchScheduler(name="sched", builderNames=["testy"])
+        ]
 
         f = BuildFactory()
         f.addStep(step)
-        c['builders'] = [
-            BuilderConfig(name="testy",
-                          workernames=["local1"],
-                          factory=f)]
+        c["builders"] = [BuilderConfig(name="testy", workernames=["local1"], factory=f)]
         yield self.setup_master(c)
 
     @defer.inlineCallbacks
@@ -50,13 +46,12 @@ class TestLog(RunMasterBase):
         testcase = self
 
         class MyStep(steps.ShellCommand):
-
             def _newLog(self, name, type, logid, logEncoding):
                 r = super()._newLog(name, type, logid, logEncoding)
                 testcase.curr_log = r
                 return r
 
-        step = MyStep(command='echo hello')
+        step = MyStep(command="echo hello")
 
         yield self.setup_config(step)
 
@@ -67,11 +62,11 @@ class TestLog(RunMasterBase):
             "committer": "me@foo.com",
             "comments": "good stuff",
             "revision": "HEAD",
-            "project": "none"
+            "project": "none",
         }
         build = yield self.doForceBuild(wantSteps=True, useChange=change, wantLogs=True)
-        self.assertEqual(build['buildid'], 1)
-        self.assertEqual(build['results'], SUCCESS)
+        self.assertEqual(build["buildid"], 1)
+        self.assertEqual(build["results"], SUCCESS)
         self.assertTrue(self.curr_log.finished)
 
     @defer.inlineCallbacks
@@ -79,13 +74,12 @@ class TestLog(RunMasterBase):
         testcase = self
 
         class MyStep(steps.MasterShellCommand):
-
             def _newLog(self, name, type, logid, logEncoding):
                 r = super()._newLog(name, type, logid, logEncoding)
                 testcase.curr_log = r
                 return r
 
-        step = MyStep(command='echo hello')
+        step = MyStep(command="echo hello")
 
         yield self.setup_config(step)
 
@@ -96,11 +90,11 @@ class TestLog(RunMasterBase):
             "committer": "me@foo.com",
             "comments": "good stuff",
             "revision": "HEAD",
-            "project": "none"
+            "project": "none",
         }
         build = yield self.doForceBuild(wantSteps=True, useChange=change, wantLogs=True)
-        self.assertEqual(build['buildid'], 1)
-        self.assertEqual(build['results'], SUCCESS)
+        self.assertEqual(build["buildid"], 1)
+        self.assertEqual(build["results"], SUCCESS)
         self.assertTrue(self.curr_log.finished)
 
     @defer.inlineCallbacks
@@ -108,14 +102,15 @@ class TestLog(RunMasterBase):
         testcase = self
 
         class MyStep(steps.MasterShellCommand):
-
             def _newLog(self, name, type, logid, logEncoding):
                 r = super()._newLog(name, type, logid, logEncoding)
                 testcase.curr_log = r
-                testcase.patch(r, "finish", lambda: defer.fail(RuntimeError('Could not finish')))
+                testcase.patch(
+                    r, "finish", lambda: defer.fail(RuntimeError("Could not finish"))
+                )
                 return r
 
-        step = MyStep(command='echo hello')
+        step = MyStep(command="echo hello")
 
         yield self.setup_config(step)
 
@@ -126,13 +121,13 @@ class TestLog(RunMasterBase):
             "committer": "me@foo.com",
             "comments": "good stuff",
             "revision": "HEAD",
-            "project": "none"
+            "project": "none",
         }
         build = yield self.doForceBuild(wantSteps=True, useChange=change, wantLogs=True)
-        self.assertEqual(build['buildid'], 1)
+        self.assertEqual(build["buildid"], 1)
         self.assertFalse(self.curr_log.finished)
-        self.assertEqual(build['results'], EXCEPTION)
+        self.assertEqual(build["results"], EXCEPTION)
         errors = self.flushLoggedErrors()
         self.assertEqual(len(errors), 1)
         error = errors[0]
-        self.assertEqual(error.getErrorMessage(), 'Could not finish')
+        self.assertEqual(error.getErrorMessage(), "Could not finish")

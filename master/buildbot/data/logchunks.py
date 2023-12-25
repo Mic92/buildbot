@@ -21,28 +21,27 @@ from buildbot.data import types
 
 
 class LogChunkEndpointBase(base.BuildNestingMixin, base.Endpoint):
-
     @defer.inlineCallbacks
     def getLogIdAndDbDictFromKwargs(self, kwargs):
         # calculate the logid
-        if 'logid' in kwargs:
-            logid = kwargs['logid']
+        if "logid" in kwargs:
+            logid = kwargs["logid"]
             dbdict = None
         else:
             stepid = yield self.getStepid(kwargs)
             if stepid is None:
                 return (None, None)
-            dbdict = yield self.master.db.logs.getLogBySlug(stepid,
-                                                            kwargs.get('log_slug'))
+            dbdict = yield self.master.db.logs.getLogBySlug(
+                stepid, kwargs.get("log_slug")
+            )
             if not dbdict:
                 return (None, None)
-            logid = dbdict['id']
+            logid = dbdict["id"]
 
         return (logid, dbdict)
 
 
 class LogChunkEndpoint(LogChunkEndpointBase):
-
     # Note that this is a singular endpoint, even though it overrides the
     # offset/limit query params in ResultSpec
     kind = base.EndpointKind.SINGLE
@@ -64,8 +63,9 @@ class LogChunkEndpoint(LogChunkEndpointBase):
         if logid is None:
             return None
         firstline = int(resultSpec.offset or 0)
-        lastline = None if resultSpec.limit is None else firstline + \
-            int(resultSpec.limit) - 1
+        lastline = (
+            None if resultSpec.limit is None else firstline + int(resultSpec.limit) - 1
+        )
         resultSpec.removePagination()
 
         # get the number of lines, if necessary
@@ -74,17 +74,14 @@ class LogChunkEndpoint(LogChunkEndpointBase):
                 dbdict = yield self.master.db.logs.getLog(logid)
             if not dbdict:
                 return None
-            lastline = int(max(0, dbdict['num_lines'] - 1))
+            lastline = int(max(0, dbdict["num_lines"] - 1))
 
         # bounds checks
         if firstline < 0 or lastline < 0 or firstline > lastline:
             return None
 
-        logLines = yield self.master.db.logs.getLogLines(
-            logid, firstline, lastline)
-        return {'logid': logid,
-                'firstline': firstline,
-                'content': logLines}
+        logLines = yield self.master.db.logs.getLogLines(logid, firstline, lastline)
+        return {"logid": logid, "firstline": firstline, "content": logLines}
 
     def get_kwargs_from_graphql(self, parent, resolve_info, args):
         if parent is not None:
@@ -95,7 +92,6 @@ class LogChunkEndpoint(LogChunkEndpointBase):
 
 
 class RawLogChunkEndpoint(LogChunkEndpointBase):
-
     # Note that this is a singular endpoint, even though it overrides the
     # offset/limit query params in ResultSpec
     kind = base.EndpointKind.RAW
@@ -118,21 +114,21 @@ class RawLogChunkEndpoint(LogChunkEndpointBase):
             dbdict = yield self.master.db.logs.getLog(logid)
             if not dbdict:
                 return None
-        lastline = max(0, dbdict['num_lines'] - 1)
+        lastline = max(0, dbdict["num_lines"] - 1)
 
-        logLines = yield self.master.db.logs.getLogLines(
-            logid, 0, lastline)
+        logLines = yield self.master.db.logs.getLogLines(logid, 0, lastline)
 
-        if dbdict['type'] == 's':
+        if dbdict["type"] == "s":
             logLines = "\n".join([line[1:] for line in logLines.splitlines()])
 
-        return {'raw': logLines,
-                'mime-type': 'text/html' if dbdict['type'] == 'h' else 'text/plain',
-                'filename': dbdict['slug']}
+        return {
+            "raw": logLines,
+            "mime-type": "text/html" if dbdict["type"] == "h" else "text/plain",
+            "filename": dbdict["slug"],
+        }
 
 
 class RawInlineLogChunkEndpoint(LogChunkEndpointBase):
-
     # Note that this is a singular endpoint, even though it overrides the
     # offset/limit query params in ResultSpec
     kind = base.EndpointKind.RAW_INLINE
@@ -155,22 +151,20 @@ class RawInlineLogChunkEndpoint(LogChunkEndpointBase):
             dbdict = yield self.master.db.logs.getLog(logid)
             if not dbdict:
                 return None
-        lastline = max(0, dbdict['num_lines'] - 1)
+        lastline = max(0, dbdict["num_lines"] - 1)
 
-        logLines = yield self.master.db.logs.getLogLines(
-            logid, 0, lastline)
+        logLines = yield self.master.db.logs.getLogLines(logid, 0, lastline)
 
-        if dbdict['type'] == 's':
+        if dbdict["type"] == "s":
             logLines = "\n".join([line[1:] for line in logLines.splitlines()])
 
         return {
-            'raw': logLines,
-            'mime-type': 'text/html' if dbdict['type'] == 'h' else 'text/plain'
+            "raw": logLines,
+            "mime-type": "text/html" if dbdict["type"] == "h" else "text/plain",
         }
 
 
 class LogChunk(base.ResourceType):
-
     name = "logchunk"
     plural = "logchunks"
     endpoints = [LogChunkEndpoint, RawLogChunkEndpoint, RawInlineLogChunkEndpoint]
@@ -181,4 +175,4 @@ class LogChunk(base.ResourceType):
         firstline = types.Integer()
         content = types.String()
 
-    entityType = EntityType(name, 'LogChunk')
+    entityType = EntityType(name, "LogChunk")

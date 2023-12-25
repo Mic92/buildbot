@@ -25,7 +25,6 @@ from twisted.python import log
 
 
 class _QueryToTwistedHandler(logging.Handler):
-
     def __init__(self, log_query_result=False, record_mode=False):
         super().__init__()
 
@@ -39,18 +38,21 @@ class _QueryToTwistedHandler(logging.Handler):
             return
         if record.levelno == logging.DEBUG:
             if self._log_query_result:
-                log.msg(f"{record.name}:{record.threadName}:result: {record.getMessage()}")
+                log.msg(
+                    f"{record.name}:{record.threadName}:result: {record.getMessage()}"
+                )
         else:
             log.msg(f"{record.name}:{record.threadName}:query:  {record.getMessage()}")
 
 
 def start_log_queries(log_query_result=False, record_mode=False):
     handler = _QueryToTwistedHandler(
-        log_query_result=log_query_result, record_mode=record_mode)
+        log_query_result=log_query_result, record_mode=record_mode
+    )
 
     # In 'sqlalchemy.engine' logging namespace SQLAlchemy outputs SQL queries
     # on INFO level, and SQL queries results on DEBUG level.
-    logger = logging.getLogger('sqlalchemy.engine')
+    logger = logging.getLogger("sqlalchemy.engine")
 
     # TODO: this is not documented field of logger, so it's probably private.
     handler.prev_level = logger.level
@@ -69,7 +71,7 @@ def start_log_queries(log_query_result=False, record_mode=False):
 
 def stop_log_queries(handler):
     assert isinstance(handler, _QueryToTwistedHandler)
-    logger = logging.getLogger('sqlalchemy.engine')
+    logger = logging.getLogger("sqlalchemy.engine")
     logger.removeHandler(handler)
 
     # Restore logger settings or set them to reasonable defaults.
@@ -88,7 +90,6 @@ def log_queries():
 
 
 class SqliteMaxVariableMixin:
-
     @contextlib.contextmanager
     def assertNoMaxVariables(self):
         handler = start_log_queries(record_mode=True)
@@ -97,5 +98,4 @@ class SqliteMaxVariableMixin:
         finally:
             stop_log_queries(handler)
             for line in handler.records:
-                self.assertFalse(line.count("?") > 999,
-                                 "too much variables in " + line)
+                self.assertFalse(line.count("?") > 999, "too much variables in " + line)

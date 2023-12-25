@@ -26,8 +26,7 @@ class Listener(base.Listener):
     pass
 
 
-class ProxyMixin():
-
+class ProxyMixin:
     def __init__(self, impl):
         assert isinstance(impl, self.ImplClass)
         self.impl = impl
@@ -67,8 +66,10 @@ class FileWriterProxy(ProxyMixin):
 
 
 class Connection(base.Connection):
-    proxies = {base.FileWriterImpl: FileWriterProxy,
-               base.FileReaderImpl: FileReaderProxy}
+    proxies = {
+        base.FileWriterImpl: FileWriterProxy,
+        base.FileReaderImpl: FileReaderProxy,
+    }
 
     def __init__(self, master_or_worker, worker=None):
         # All the existing code passes just the name to the Connection, however we'll need to
@@ -76,8 +77,11 @@ class Connection(base.Connection):
         if worker is None:
             worker = master_or_worker
         else:
-            warn_deprecated('3.2.0', 'LocalWorker: Using different version of buildbot-worker ' +
-                            'than buildbot is not supported')
+            warn_deprecated(
+                "3.2.0",
+                "LocalWorker: Using different version of buildbot-worker "
+                + "than buildbot is not supported",
+            )
 
         super().__init__(worker.workername)
         self.worker = worker
@@ -94,12 +98,19 @@ class Connection(base.Connection):
     def remoteSetBuilderList(self, builders):
         return defer.maybeDeferred(self.worker.bot.remote_setBuilderList, builders)
 
-    def remoteStartCommand(self, remoteCommand, builderName, commandId, commandName, args):
+    def remoteStartCommand(
+        self, remoteCommand, builderName, commandId, commandName, args
+    ):
         remoteCommand = RemoteCommandProxy(remoteCommand)
         args = self.createArgsProxies(args)
         workerforbuilder = self.worker.bot.builders[builderName]
-        return defer.maybeDeferred(workerforbuilder.remote_startCommand, remoteCommand,
-                                   commandId, commandName, args)
+        return defer.maybeDeferred(
+            workerforbuilder.remote_startCommand,
+            remoteCommand,
+            commandId,
+            commandName,
+            args,
+        )
 
     def remoteShutdown(self):
         return defer.maybeDeferred(self.worker.stopService)
@@ -109,7 +120,9 @@ class Connection(base.Connection):
 
     def remoteInterruptCommand(self, builderName, commandId, why):
         workerforbuilder = self.worker.bot.builders[builderName]
-        return defer.maybeDeferred(workerforbuilder.remote_interruptCommand, commandId, why)
+        return defer.maybeDeferred(
+            workerforbuilder.remote_interruptCommand, commandId, why
+        )
 
     def get_peer(self):
         return "local"

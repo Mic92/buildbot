@@ -49,33 +49,41 @@ def _copy_database_in_reactor(config):
         if print_debug:
             print(*args, **kwargs)
 
-    config['basedir'] = os.path.abspath(config['basedir'])
+    config["basedir"] = os.path.abspath(config["basedir"])
 
-    with base.captureErrors((SyntaxError, ImportError),
-                            f"Unable to load 'buildbot.tac' from '{config['basedir']}':"):
-        config_file = base.getConfigFileFromTac(config['basedir'])
+    with base.captureErrors(
+        (SyntaxError, ImportError),
+        f"Unable to load 'buildbot.tac' from '{config['basedir']}':",
+    ):
+        config_file = base.getConfigFileFromTac(config["basedir"])
 
-    with base.captureErrors(config_module.ConfigErrors,
-                            f"Unable to load '{config_file}' from '{config['basedir']}':"):
+    with base.captureErrors(
+        config_module.ConfigErrors,
+        f"Unable to load '{config_file}' from '{config['basedir']}':",
+    ):
         master_src_cfg = base.loadConfig(config, config_file)
         master_dst_cfg = base.loadConfig(config, config_file)
         master_dst_cfg.db["db_url"] = config["destination_url"]
 
-    print_log(f"Copying database ({master_src_cfg.db['db_url']}) to ({config['destination_url']})")
+    print_log(
+        f"Copying database ({master_src_cfg.db['db_url']}) to ({config['destination_url']})"
+    )
 
     if not master_src_cfg or not master_dst_cfg:
         return 1
 
-    master_src = BuildMaster(config['basedir'])
+    master_src = BuildMaster(config["basedir"])
     master_src.config = master_src_cfg
     try:
         yield master_src.db.setup(check_version=True, verbose=not config["quiet"])
     except exceptions.DatabaseNotReadyError:
-        for l in connector.upgrade_message.format(basedir=config['basedir']).split('\n'):
+        for l in connector.upgrade_message.format(basedir=config["basedir"]).split(
+            "\n"
+        ):
             print(l)
         return 1
 
-    master_dst = BuildMaster(config['basedir'])
+    master_dst = BuildMaster(config["basedir"])
     master_dst.config = master_dst_cfg
     yield master_dst.db.setup(check_version=False, verbose=not config["quiet"])
     yield master_dst.db.model.upgrade()
@@ -84,7 +92,9 @@ def _copy_database_in_reactor(config):
 
 
 @defer.inlineCallbacks
-def _copy_single_table(src_db, dst_db, table, table_name, buildset_to_parent_buildid, print_log):
+def _copy_single_table(
+    src_db, dst_db, table, table_name, buildset_to_parent_buildid, print_log
+):
     column_keys = table.columns.keys()
 
     rows_queue = queue.Queue(1024)
@@ -93,7 +103,11 @@ def _copy_single_table(src_db, dst_db, table, table_name, buildset_to_parent_bui
 
     autoincrement_foreign_key_column = None
     for column_name, column in table.columns.items():
-        if not column.foreign_keys and column.primary_key and isinstance(column.type, sa.Integer):
+        if (
+            not column.foreign_keys
+            and column.primary_key
+            and isinstance(column.type, sa.Integer)
+        ):
             autoincrement_foreign_key_column = column_name
 
     def thd_write(conn):
@@ -102,12 +116,16 @@ def _copy_single_table(src_db, dst_db, table, table_name, buildset_to_parent_bui
             try:
                 rows = rows_queue.get(timeout=1)
                 if rows is None:
-
-                    if autoincrement_foreign_key_column is not None and max_column_id != 0:
-                        if dst_db.pool.engine.dialect.name == 'postgresql':
+                    if (
+                        autoincrement_foreign_key_column is not None
+                        and max_column_id != 0
+                    ):
+                        if dst_db.pool.engine.dialect.name == "postgresql":
                             # Explicitly inserting primary row IDs does not bump the primary key
                             # sequence on Postgres
-                            seq_name = f"{table_name}_{autoincrement_foreign_key_column}_seq"
+                            seq_name = (
+                                f"{table_name}_{autoincrement_foreign_key_column}_seq"
+                            )
                             transaction = conn.begin()
                             conn.execute(
                                 f"ALTER SEQUENCE {seq_name} RESTART WITH {max_column_id + 1}"
@@ -117,13 +135,13 @@ def _copy_single_table(src_db, dst_db, table, table_name, buildset_to_parent_bui
                     rows_queue.task_done()
                     return
 
-                row_dicts = [
-                    {k: getattr(row, k) for k in column_keys} for row in rows
-                ]
+                row_dicts = [{k: getattr(row, k) for k in column_keys} for row in rows]
 
                 if autoincrement_foreign_key_column is not None:
                     for row in row_dicts:
-                        max_column_id = max(max_column_id, row[autoincrement_foreign_key_column])
+                        max_column_id = max(
+                            max_column_id, row[autoincrement_foreign_key_column]
+                        )
 
                 if table_name == "buildsets":
                     for row_dict in row_dicts:
@@ -138,8 +156,10 @@ def _copy_single_table(src_db, dst_db, table, table_name, buildset_to_parent_bui
 
             try:
                 written_count[0] += len(rows)
-                print_log(f"Copying {len(rows)} items ({written_count[0]}/{total_count[0]}) "
-                          f"for {table_name} table")
+                print_log(
+                    f"Copying {len(rows)} items ({written_count[0]}/{total_count[0]}) "
+                    f"for {table_name} table"
+                )
 
                 if len(row_dicts) > 0:
                     conn.execute(table.insert(), row_dicts)
@@ -224,20 +244,15 @@ def _copy_database_with_db(src_db, dst_db, print_log):
     for table_name in table_names:
         table = metadata.tables[table_name]
         yield _copy_single_table(
-            src_db,
-            dst_db,
-            table,
-            table_name,
-            buildset_to_parent_buildid,
-            print_log
+            src_db, dst_db, table, table_name, buildset_to_parent_buildid, print_log
         )
 
     def thd_write_buildset_parent_buildid(conn):
         written_count = 0
         for rows in misc.chunkify_list(buildset_to_parent_buildid, 10000):
             q = model.Model.buildsets.update()
-            q = q.where(model.Model.buildsets.c.id == sa.bindparam('_id'))
-            q = q.values({'parent_buildid': sa.bindparam('parent_buildid')})
+            q = q.where(model.Model.buildsets.c.id == sa.bindparam("_id"))
+            q = q.values({"parent_buildid": sa.bindparam("parent_buildid")})
 
             written_count += len(rows)
             print_log(
@@ -245,10 +260,13 @@ def _copy_database_with_db(src_db, dst_db, print_log):
                 f"for buildset.parent_buildid field"
             )
 
-            conn.execute(q, [
-                {'_id': buildset_id, 'parent_buildid': parent_buildid}
-                for buildset_id, parent_buildid in rows
-            ])
+            conn.execute(
+                q,
+                [
+                    {"_id": buildset_id, "parent_buildid": parent_buildid}
+                    for buildset_id, parent_buildid in rows
+                ],
+            )
 
     yield dst_db.pool.do(thd_write_buildset_parent_buildid)
 

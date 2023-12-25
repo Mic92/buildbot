@@ -17,7 +17,9 @@ from twisted.internet import defer
 
 
 @defer.inlineCallbacks
-def get_real_locks_from_accesses_raw(locks, props, builder, workerforbuilder, config_version):
+def get_real_locks_from_accesses_raw(
+    locks, props, builder, workerforbuilder, config_version
+):
     workername = workerforbuilder.worker.workername
 
     if props is not None:

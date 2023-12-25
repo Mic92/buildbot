@@ -72,16 +72,17 @@ class UpgradeTestMixin(db.RealDatabaseMixin, TestReactorMixin):
             tarball = util.sibpath(__file__, self.source_tarball)
             if not os.path.exists(tarball):
                 raise unittest.SkipTest(
-                    f"'{tarball}' not found (normal when not building from Git)")
+                    f"'{tarball}' not found (normal when not building from Git)"
+                )
 
             with tarfile.open(tarball) as tf:
                 prefixes = set()
                 for inf in tf:
-                    if hasattr(tarfile, 'data_filter'):
-                        tf.extract(inf, filter='data')
+                    if hasattr(tarfile, "data_filter"):
+                        tf.extract(inf, filter="data")
                     else:
                         tf.extract(inf)
-                    prefixes.add(inf.name.split('/', 1)[0])
+                    prefixes.add(inf.name.split("/", 1)[0])
 
             # get the top-level dir from the tarball
             assert len(prefixes) == 1, "tarball has multiple top-level dirs!"
@@ -92,7 +93,7 @@ class UpgradeTestMixin(db.RealDatabaseMixin, TestReactorMixin):
             self.basedir = os.path.abspath("basedir")
 
         self.master = master = fakemaster.make_master(self)
-        master.config.db['db_url'] = self.db_url
+        master.config.db["db_url"] = self.db_url
         self.db = connector.DBConnector(self.basedir)
         yield self.db.setServiceParent(master)
         yield self.db.setup(check_version=False)
@@ -123,11 +124,13 @@ class UpgradeTestMixin(db.RealDatabaseMixin, TestReactorMixin):
         def comp(engine):
             # use compare_model_to_db, which gets everything but indexes
             with engine.connect() as conn:
-                diff = compare_metadata(MigrationContext.configure(conn), self.db.model.metadata)
+                diff = compare_metadata(
+                    MigrationContext.configure(conn), self.db.model.metadata
+                )
 
-            if engine.dialect.name == 'mysql':
+            if engine.dialect.name == "mysql":
                 # MySQL/MyISAM does not support foreign keys, which is expected.
-                diff = [d for d in diff if d[0] != 'add_fk']
+                diff = [d for d in diff if d[0] != "add_fk"]
 
             if diff:
                 return diff
@@ -137,45 +140,52 @@ class UpgradeTestMixin(db.RealDatabaseMixin, TestReactorMixin):
             # unique, name, column_names
             diff = []
             for tbl in self.db.model.metadata.sorted_tables:
-                exp = sorted([
-                    {
-                        "name": idx.name,
-                        "unique": idx.unique and 1 or 0,
-                        "column_names": sorted([c.name for c in idx.columns])
-                    }
-                    for idx in tbl.indexes
-                ], key=lambda x: x['name']
-            )
+                exp = sorted(
+                    [
+                        {
+                            "name": idx.name,
+                            "unique": idx.unique and 1 or 0,
+                            "column_names": sorted([c.name for c in idx.columns]),
+                        }
+                        for idx in tbl.indexes
+                    ],
+                    key=lambda x: x["name"],
+                )
 
                 # include implied indexes on postgres and mysql
-                if engine.dialect.name == 'mysql':
-                    implied = [idx for (tname, idx)
-                               in self.db.model.implied_indexes
-                               if tname == tbl.name]
+                if engine.dialect.name == "mysql":
+                    implied = [
+                        idx
+                        for (tname, idx) in self.db.model.implied_indexes
+                        if tname == tbl.name
+                    ]
                     exp = sorted(exp + implied, key=lambda k: k["name"])
 
-                got = sorted(insp.get_indexes(tbl.name),
-                             key=lambda x: x['name'])
+                got = sorted(insp.get_indexes(tbl.name), key=lambda x: x["name"])
                 if exp != got:
-                    got_names = {idx['name'] for idx in got}
-                    exp_names = {idx['name'] for idx in exp}
-                    got_info = dict((idx['name'], idx) for idx in got)
-                    exp_info = dict((idx['name'], idx) for idx in exp)
+                    got_names = {idx["name"] for idx in got}
+                    exp_names = {idx["name"] for idx in exp}
+                    got_info = dict((idx["name"], idx) for idx in got)
+                    exp_info = dict((idx["name"], idx) for idx in exp)
                     for name in got_names - exp_names:
-                        diff.append(f"got unexpected index {name} on table {tbl.name}: "
-                                    f"{repr(got_info[name])}")
+                        diff.append(
+                            f"got unexpected index {name} on table {tbl.name}: "
+                            f"{repr(got_info[name])}"
+                        )
                     for name in exp_names - got_names:
                         diff.append(f"missing index {name} on table {tbl.name}")
                     for name in got_names & exp_names:
                         gi = {
                             "name": name,
-                            "unique": got_info[name]['unique'] and 1 or 0,
-                            "column_names": sorted(got_info[name]['column_names'])
+                            "unique": got_info[name]["unique"] and 1 or 0,
+                            "column_names": sorted(got_info[name]["column_names"]),
                         }
                         ei = exp_info[name]
                         if gi != ei:
-                            diff.append(f"index {name} on table {tbl.name} differs: "
-                                        f"got {gi}; exp {ei}")
+                            diff.append(
+                                f"index {name} on table {tbl.name} differs: "
+                                f"got {gi}; exp {ei}"
+                            )
             if diff:
                 return "\n".join(diff)
             return None
@@ -187,8 +197,10 @@ class UpgradeTestMixin(db.RealDatabaseMixin, TestReactorMixin):
             # TypeError.  Reflection is only used for tests, so we can just skip
             # this test on such platforms.  We still get the advantage of trying
             # the upgrade, at any rate.
-            raise unittest.SkipTest("model comparison skipped: bugs in schema "
-                                    "reflection on this sqlite version") from e
+            raise unittest.SkipTest(
+                "model comparison skipped: bugs in schema "
+                "reflection on this sqlite version"
+            ) from e
 
         if diff:
             self.fail("\n" + pprint.pformat(diff))
@@ -198,7 +210,9 @@ class UpgradeTestMixin(db.RealDatabaseMixin, TestReactorMixin):
             if "file is encrypted or is not a database" in str(e):
                 self.flushLoggedErrors(sqlite3.DatabaseError)
                 self.flushLoggedErrors(DatabaseError)
-                raise unittest.SkipTest(f"sqlite dump not readable on this machine {str(e)}")
+                raise unittest.SkipTest(
+                    f"sqlite dump not readable on this machine {str(e)}"
+                )
 
     @defer.inlineCallbacks
     def do_test_upgrade(self, pre_callbacks=None):
@@ -217,26 +231,25 @@ class UpgradeTestMixin(db.RealDatabaseMixin, TestReactorMixin):
 
 
 class UpgradeTestEmpty(UpgradeTestMixin, unittest.TestCase):
-
     use_real_db = True
 
     @defer.inlineCallbacks
     def test_emptydb_modelmatches(self):
         os_encoding = locale.getpreferredencoding()
         try:
-            '\N{SNOWMAN}'.encode(os_encoding)
+            "\N{SNOWMAN}".encode(os_encoding)
         except UnicodeEncodeError as e:
             # Default encoding of Windows console is 'cp1252'
             # which cannot encode the snowman.
-            raise unittest.SkipTest("Cannot encode weird unicode "
-                f"on this platform with {os_encoding}") from e
+            raise unittest.SkipTest(
+                "Cannot encode weird unicode " f"on this platform with {os_encoding}"
+            ) from e
 
         yield self.db.model.upgrade()
         yield self.assertModelMatches()
 
 
 class UpgradeTestV2_10_5(UpgradeTestMixin, unittest.TestCase):
-
     source_tarball = "v2.10.5.tgz"
 
     def test_upgrade(self):
@@ -248,7 +261,10 @@ class UpgradeTestV2_10_5(UpgradeTestMixin, unittest.TestCase):
     @defer.inlineCallbacks
     def test_got_invalid_sqlite_file(self):
         def upgrade():
-            return defer.fail(sqlite3.DatabaseError('file is encrypted or is not a database'))
+            return defer.fail(
+                sqlite3.DatabaseError("file is encrypted or is not a database")
+            )
+
         self.db.model.upgrade = upgrade
         with self.assertRaises(unittest.SkipTest):
             yield self.do_test_upgrade()
@@ -256,14 +272,16 @@ class UpgradeTestV2_10_5(UpgradeTestMixin, unittest.TestCase):
     @defer.inlineCallbacks
     def test_got_invalid_sqlite_file2(self):
         def upgrade():
-            return defer.fail(DatabaseError('file is encrypted or is not a database', None, None))
+            return defer.fail(
+                DatabaseError("file is encrypted or is not a database", None, None)
+            )
+
         self.db.model.upgrade = upgrade
         with self.assertRaises(unittest.SkipTest):
             yield self.do_test_upgrade()
 
 
 class UpgradeTestV090b4(UpgradeTestMixin, unittest.TestCase):
-
     source_tarball = "v090b4.tgz"
 
     def gotError(self, e):
@@ -282,7 +300,6 @@ class UpgradeTestV090b4(UpgradeTestMixin, unittest.TestCase):
 
 
 class UpgradeTestV087p1(UpgradeTestMixin, unittest.TestCase):
-
     source_tarball = "v087p1.tgz"
 
     def gotError(self, e):

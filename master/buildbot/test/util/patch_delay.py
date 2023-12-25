@@ -35,7 +35,7 @@ def _dot_lookup(thing, comp, import_path):
 
 
 def _importer(target):
-    components = target.split('.')
+    components = target.split(".")
     import_path = components.pop(0)
     thing = __import__(import_path)
 
@@ -47,9 +47,11 @@ def _importer(target):
 
 def _get_target(target):
     try:
-        target, attribute = target.rsplit('.', 1)
+        target, attribute = target.rsplit(".", 1)
     except (TypeError, ValueError) as e:
-        raise TypeError(f"Need a valid target to patch. You supplied: {repr(target)}") from e
+        raise TypeError(
+            f"Need a valid target to patch. You supplied: {repr(target)}"
+        ) from e
     return _importer(target), attribute
 
 
@@ -76,15 +78,16 @@ class DelayWrapper:
 def patchForDelay(target_name):
     class Default:
         pass
+
     default = Default()
 
     target, attribute = _get_target(target_name)
     original = getattr(target, attribute, default)
 
     if original is default:
-        raise RuntimeError(f'Could not find name {target_name}')
+        raise RuntimeError(f"Could not find name {target_name}")
     if not callable(original):
-        raise RuntimeError(f'{target_name} is not callable')
+        raise RuntimeError(f"{target_name} is not callable")
 
     delay = DelayWrapper()
 

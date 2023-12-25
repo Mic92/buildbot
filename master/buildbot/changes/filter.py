@@ -21,19 +21,18 @@ from buildbot.util.ssfilter import _create_property_filters
 
 
 class ChangeFilter(ComparableMixin):
-
     # NOTE: If users use a filter_fn, we have no way to determine whether it has
     # changed at reconfig, so the scheduler will always be restarted.  That's as
     # good as Python can do.
     compare_attrs = (
-        'filter_fn',
-        'filters',
-        'property_filters',
-        'project_fn',
-        'repository_fn',
-        'branch_fn',
-        'category_fn',
-        'codebase_fn',
+        "filter_fn",
+        "filters",
+        "property_filters",
+        "project_fn",
+        "repository_fn",
+        "branch_fn",
+        "category_fn",
+        "codebase_fn",
     )
 
     def __init__(
@@ -67,7 +66,7 @@ class ChangeFilter(ComparableMixin):
         property_eq=None,
         property_not_eq=None,
         property_re=None,
-        property_not_re=None
+        property_not_re=None,
     ):
         self.filter_fn = filter_fn
         self.project_fn = project_fn
@@ -77,46 +76,38 @@ class ChangeFilter(ComparableMixin):
         self.codebase_fn = codebase_fn
 
         self.filters = _create_filters(
-            project,
-            project_not_eq,
-            project_re,
-            project_not_re,
-            'project'
+            project, project_not_eq, project_re, project_not_re, "project"
         )
         self.filters += _create_filters(
             repository,
             repository_not_eq,
             repository_re,
             repository_not_re,
-            'repository',
+            "repository",
         )
         self.filters += _create_branch_filters(
             branch,
             branch_not_eq,
             branch_re,
             branch_not_re,
-            'branch',
+            "branch",
         )
         self.filters += _create_filters(
             category,
             category_not_eq,
             category_re,
             category_not_re,
-            'category',
+            "category",
         )
         self.filters += _create_filters(
             codebase,
             codebase_not_eq,
             codebase_re,
             codebase_not_re,
-            'codebase',
+            "codebase",
         )
         self.property_filters = _create_property_filters(
-            property_eq,
-            property_not_eq,
-            property_re,
-            property_not_re,
-            'property'
+            property_eq, property_not_eq, property_re, property_not_re, "property"
         )
 
     def filter_change(self, change):
@@ -134,11 +125,11 @@ class ChangeFilter(ComparableMixin):
             return False
 
         for filter in self.filters:
-            value = getattr(change, filter.prop, '')
+            value = getattr(change, filter.prop, "")
             if not filter.is_matched(value):
                 return False
         for filter in self.property_filters:
-            value = change.properties.getProperty(filter.prop, '')
+            value = change.properties.getProperty(filter.prop, "")
             if not filter.is_matched(value):
                 return False
         return True
@@ -146,27 +137,30 @@ class ChangeFilter(ComparableMixin):
     def _get_repr_filters(self):
         filters = []
         if self.filter_fn is not None:
-            filters.append(f'{self.filter_fn.__name__}()')
+            filters.append(f"{self.filter_fn.__name__}()")
         if self.project_fn is not None:
-            filters.append(f'{self.project_fn.__name__}(project)')
+            filters.append(f"{self.project_fn.__name__}(project)")
         if self.codebase_fn is not None:
-            filters.append(f'{self.codebase_fn.__name__}(codebase)')
+            filters.append(f"{self.codebase_fn.__name__}(codebase)")
         if self.repository_fn is not None:
-            filters.append(f'{self.repository_fn.__name__}(repository)')
+            filters.append(f"{self.repository_fn.__name__}(repository)")
         if self.category_fn is not None:
-            filters.append(f'{self.category_fn.__name__}(category)')
+            filters.append(f"{self.category_fn.__name__}(category)")
         if self.branch_fn is not None:
-            filters.append(f'{self.branch_fn.__name__}(branch)')
+            filters.append(f"{self.branch_fn.__name__}(branch)")
         filters += [filter.describe() for filter in self.filters]
         filters += [filter.describe() for filter in self.property_filters]
         return filters
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} on {' and '.join(self._get_repr_filters())}>"
+        return (
+            f"<{self.__class__.__name__} on {' and '.join(self._get_repr_filters())}>"
+        )
 
     @staticmethod
-    def fromSchedulerConstructorArgs(change_filter=None,
-                                     branch=NotABranch, categories=None):
+    def fromSchedulerConstructorArgs(
+        change_filter=None, branch=NotABranch, categories=None
+    ):
         """
         Static method to create a filter based on constructor args
         change_filter, branch, and categories; use default values @code{None},
@@ -179,18 +173,19 @@ class ChangeFilter(ComparableMixin):
 
         # use a change_filter, if given one
         if change_filter:
-            if (branch is not NotABranch or categories is not None):
-                raise RuntimeError("cannot specify both change_filter and "
-                                   "branch or categories")
+            if branch is not NotABranch or categories is not None:
+                raise RuntimeError(
+                    "cannot specify both change_filter and " "branch or categories"
+                )
             return change_filter
         elif branch is not NotABranch or categories:
             # build a change filter from the deprecated category and branch
             # args
             cfargs = {}
             if branch is not NotABranch:
-                cfargs['branch'] = branch
+                cfargs["branch"] = branch
             if categories:
-                cfargs['category'] = categories
+                cfargs["category"] = categories
             return ChangeFilter(**cfargs)
         else:
             return None

@@ -33,9 +33,11 @@ class StatsService(service.BuildbotService):
     def checkConfig(self, storage_backends):
         for wfb in storage_backends:
             if not isinstance(wfb, StatsStorageBase):
-                raise TypeError(f"Invalid type of stats storage service {type(StatsStorageBase)!r}."
-                                " Should be of type StatsStorageBase, "
-                                f"is: {type(StatsStorageBase)!r}")
+                raise TypeError(
+                    f"Invalid type of stats storage service {type(StatsStorageBase)!r}."
+                    " Should be of type StatsStorageBase, "
+                    f"is: {type(StatsStorageBase)!r}"
+                )
 
     @defer.inlineCallbacks
     def reconfigService(self, storage_backends):
@@ -58,7 +60,9 @@ class StatsService(service.BuildbotService):
             for cap in svc.captures:
                 cap.parent_svcs.append(svc)
                 cap.master = self.master
-                consumer = yield self.master.mq.startConsuming(cap.consume, cap.routingKey)
+                consumer = yield self.master.mq.startConsuming(
+                    cap.consume, cap.routingKey
+                )
                 self.consumers.append(consumer)
 
     @defer.inlineCallbacks
@@ -84,13 +88,9 @@ class StatsService(service.BuildbotService):
         post_data: (dict) A dictionary of key-value pairs that'll be sent for storage.
         buildid: The buildid of the current Build.
         """
-        build_data = yield self.master.data.get(('builds', buildid))
+        build_data = yield self.master.data.get(("builds", buildid))
         routingKey = ("stats-yieldMetricsValue", "stats-yield-data")
 
-        msg = {
-            'data_name': data_name,
-            'post_data': post_data,
-            'build_data': build_data
-        }
+        msg = {"data_name": data_name, "post_data": post_data, "build_data": build_data}
 
         self.master.mq.produce(routingKey, msg)

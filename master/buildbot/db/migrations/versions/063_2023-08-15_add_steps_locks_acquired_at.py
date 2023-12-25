@@ -25,8 +25,8 @@ from alembic import op
 from buildbot.util import sautils
 
 # revision identifiers, used by Alembic.
-revision = '063'
-down_revision = '062'
+revision = "063"
+down_revision = "062"
 branch_labels = None
 depends_on = None
 
@@ -36,12 +36,15 @@ def upgrade():
 
     metadata = sa.MetaData()
     steps_tbl = sautils.Table(
-        'steps', metadata,
+        "steps",
+        metadata,
         sa.Column("started_at", sa.Integer),
-        sa.Column("locks_acquired_at", sa.Integer)
+        sa.Column("locks_acquired_at", sa.Integer),
     )
 
-    op.execute(steps_tbl.update(values={steps_tbl.c.locks_acquired_at: steps_tbl.c.started_at}))
+    op.execute(
+        steps_tbl.update(values={steps_tbl.c.locks_acquired_at: steps_tbl.c.started_at})
+    )
 
 
 def downgrade():

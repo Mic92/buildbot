@@ -21,15 +21,17 @@ def check_param_length(value, name, max_length):
         error(f"{name} '{value}' exceeds maximum length of {max_length}")
 
     qualified_name = f"{type(value).__module__}.{type(value).__name__}"
-    if qualified_name == 'buildbot.process.properties.Interpolate':
+    if qualified_name == "buildbot.process.properties.Interpolate":
         if value.args:
-            interpolations = tuple([''] * len(value.args))
+            interpolations = tuple([""] * len(value.args))
         else:
-            interpolations = {k: '' for k in value.interpolations}
+            interpolations = {k: "" for k in value.interpolations}
         shortest_value = value.fmtstring % interpolations
         if len(shortest_value) > max_length:
-            error(f"{name} '{value}' (shortest interpolation) exceeds maximum length of "
-                  f"{max_length}")
+            error(
+                f"{name} '{value}' (shortest interpolation) exceeds maximum length of "
+                f"{max_length}"
+            )
 
 
 def check_param_type(value, default_value, class_inst, name, types, types_msg):
@@ -44,7 +46,9 @@ def check_param_str(value, class_inst, name):
 
 
 def check_param_str_none(value, class_inst, name):
-    return check_param_type(value, "(unknown)", class_inst, name, (str, type(None)), "str or None")
+    return check_param_type(
+        value, "(unknown)", class_inst, name, (str, type(None)), "str or None"
+    )
 
 
 def check_param_int(value, class_inst, name):
@@ -52,15 +56,20 @@ def check_param_int(value, class_inst, name):
 
 
 def check_param_int_none(value, class_inst, name):
-    return check_param_type(value, None, class_inst, name, (int, type(None)), "int or None")
+    return check_param_type(
+        value, None, class_inst, name, (int, type(None)), "int or None"
+    )
 
 
 def check_markdown_support(class_inst):
     try:
         import markdown  # pylint: disable=import-outside-toplevel
+
         [markdown]
         return True
     except ImportError:  # pragma: no cover
-        error(f"{class_inst.__name__}: Markdown library is required in order to use "
-              "markdown format ('pip install Markdown')")
+        error(
+            f"{class_inst.__name__}: Markdown library is required in order to use "
+            "markdown format ('pip install Markdown')"
+        )
         return False

@@ -23,13 +23,13 @@ from buildbot.test.fakedb.row import Row
 class Project(Row):
     table = "projects"
 
-    id_column = 'id'
-    hashedColumns = [('name_hash', ('name',))]
+    id_column = "id"
+    hashedColumns = [("name_hash", ("name",))]
 
     def __init__(
         self,
         id=None,
-        name='fake_project',
+        name="fake_project",
         name_hash=None,
         slug=None,
         description=None,
@@ -45,12 +45,11 @@ class Project(Row):
             slug=slug,
             description=description,
             description_format=description_format,
-            description_html=description_html
+            description_html=description_html,
         )
 
 
 class FakeProjectsComponent(FakeDBComponent):
-
     def setUp(self):
         self.projects = {}
 
@@ -69,8 +68,8 @@ class FakeProjectsComponent(FakeDBComponent):
     # Returns Deferred that yields a number
     def find_project_id(self, name, auto_create=True):
         for m in self.projects.values():
-            if m['name'] == name:
-                return defer.succeed(m['id'])
+            if m["name"] == name:
+                return defer.succeed(m["id"])
         if not auto_create:
             return defer.succeed(None)
         id = len(self.projects) + 1
@@ -103,7 +102,8 @@ class FakeProjectsComponent(FakeDBComponent):
         }
 
         active_projectids = {
-            builder["projectid"] for id, builder in self.db.builders.builders.items()
+            builder["projectid"]
+            for id, builder in self.db.builders.builders.items()
             if id in active_builderids
         }
 
@@ -114,18 +114,13 @@ class FakeProjectsComponent(FakeDBComponent):
         return rv
 
     def update_project_info(
-        self,
-        projectid,
-        slug,
-        description,
-        description_format,
-        description_html
+        self, projectid, slug, description, description_format, description_html
     ):
         if projectid not in self.projects:
             return defer.succeed(None)
         project = self.projects[projectid]
-        project['slug'] = slug
-        project['description'] = description
+        project["slug"] = slug
+        project["description"] = description
         project["description_format"] = description_format
         project["description_html"] = description_html
         return defer.succeed(None)

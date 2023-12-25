@@ -22,7 +22,6 @@ from zope.interface.interface import Attribute
 
 
 class InterfaceTests:
-
     # assertions
 
     def assertArgSpecMatches(self, actualMethod, *fakeMethods):
@@ -36,19 +35,20 @@ class InterfaceTests:
 
             self.assertArgSpecMatches(obj.methodUnderTest, self.fakeMethod)
         """
+
         def filter(signature):
             if len(signature.parameters) == 0:
                 return signature
 
             parameters = OrderedDict(signature.parameters)
             for name in parameters:
-                if name == 'self':
-                    parameters.pop('self')
+                if name == "self":
+                    parameters.pop("self")
                 break
 
             delete_names = []
             for name in parameters:
-                if name.startswith('_'):
+                if name.startswith("_"):
                     delete_names.append(name)
             for name in delete_names:
                 parameters.pop(name)
@@ -63,8 +63,7 @@ class InterfaceTests:
                 return func
 
         def filter_argspec(func):
-            return filter(
-                inspect.signature(remove_decorators(func)))
+            return filter(inspect.signature(remove_decorators(func)))
 
         def assert_same_argspec(expected, actual):
             if expected != actual:
@@ -82,6 +81,7 @@ class InterfaceTests:
             assert_same_argspec(expected_argspec, actual_argspec)
             # The decorated function works as usual.
             return decorated
+
         return assert_same_argspec_decorator
 
     def assertInterfacesImplemented(self, cls):
@@ -90,19 +90,25 @@ class InterfaceTests:
         for interface in zope.interface.implementedBy(cls):
             for attr, template_argspec in interface.namesAndDescriptions():
                 if not hasattr(cls, attr):
-                    msg = (f"Expected: {repr(cls)}; to implement: {attr} as specified in "
-                           f"{repr(interface)}")
+                    msg = (
+                        f"Expected: {repr(cls)}; to implement: {attr} as specified in "
+                        f"{repr(interface)}"
+                    )
                     self.fail(msg)
                 actual_argspec = getattr(cls, attr)
                 if isinstance(template_argspec, Attribute):
                     continue
                 # else check method signatures
-                while hasattr(actual_argspec, '__wrapped__'):
+                while hasattr(actual_argspec, "__wrapped__"):
                     actual_argspec = actual_argspec.__wrapped__
-                actual_argspec = zope.interface.interface.fromMethod(
-                    actual_argspec)
+                actual_argspec = zope.interface.interface.fromMethod(actual_argspec)
 
-                if actual_argspec.getSignatureInfo() != template_argspec.getSignatureInfo():
-                    msg = (f"{attr}: expected: {template_argspec.getSignatureString()}; got: "
-                           f"{actual_argspec.getSignatureString()}")
+                if (
+                    actual_argspec.getSignatureInfo()
+                    != template_argspec.getSignatureInfo()
+                ):
+                    msg = (
+                        f"{attr}: expected: {template_argspec.getSignatureString()}; got: "
+                        f"{actual_argspec.getSignatureString()}"
+                    )
                     self.fail(msg)

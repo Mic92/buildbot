@@ -42,7 +42,9 @@ class ConnectorComponentMixin(TestReactorMixin, db.RealDatabaseMixin):
     """
 
     @defer.inlineCallbacks
-    def setUpConnectorComponent(self, table_names=None, basedir='basedir', dialect_name='sqlite'):
+    def setUpConnectorComponent(
+        self, table_names=None, basedir="basedir", dialect_name="sqlite"
+    ):
         """Set up C{self.db}, using the given db_url and basedir."""
         self.setup_test_reactor()
 
@@ -55,7 +57,9 @@ class ConnectorComponentMixin(TestReactorMixin, db.RealDatabaseMixin):
         self.db.pool = self.db_pool
         self.db.master = fakemaster.make_master(self)
         self.db.model = model.Model(self.db)
-        self.db._engine = types.SimpleNamespace(dialect=types.SimpleNamespace(name=dialect_name))
+        self.db._engine = types.SimpleNamespace(
+            dialect=types.SimpleNamespace(name=dialect_name)
+        )
 
     @defer.inlineCallbacks
     def tearDownConnectorComponent(self):

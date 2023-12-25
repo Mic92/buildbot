@@ -32,9 +32,9 @@ from buildbot.test.util.decorators import skipUnlessPlatformIs
 
 def mkconfig(**kwargs):
     config = {
-        'quiet': False,
-        'basedir': os.path.abspath('basedir'),
-        'nodaemon': False,
+        "quiet": False,
+        "basedir": os.path.abspath("basedir"),
+        "nodaemon": False,
     }
     config.update(kwargs)
     return config
@@ -57,14 +57,13 @@ app.setServiceParent(application)
 
 
 class TestStart(misc.StdoutAssertionsMixin, dirs.DirsMixin, unittest.TestCase):
-
     def setUp(self):
         # On slower machines with high CPU oversubscription this test may take longer to run than
         # the default timeout.
         self.timeout = 20
 
-        self.setUpDirs('basedir')
-        with open(os.path.join('basedir', 'buildbot.tac'), 'wt', encoding='utf-8') as f:
+        self.setUpDirs("basedir")
+        with open(os.path.join("basedir", "buildbot.tac"), "wt", encoding="utf-8") as f:
             f.write(fake_master_tac)
         self.setUpStdoutAssertions()
 
@@ -74,25 +73,28 @@ class TestStart(misc.StdoutAssertionsMixin, dirs.DirsMixin, unittest.TestCase):
     # tests
 
     def test_start_not_basedir(self):
-        self.assertEqual(start.start(mkconfig(basedir='doesntexist')), 1)
-        self.assertInStdout('invalid buildmaster directory')
+        self.assertEqual(start.start(mkconfig(basedir="doesntexist")), 1)
+        self.assertInStdout("invalid buildmaster directory")
 
     def runStart(self, **config):
         args = [
-            '-c',
-            'from buildbot.scripts.start import start; import sys; '
-            f'sys.exit(start({repr(mkconfig(**config))}))',
+            "-c",
+            "from buildbot.scripts.start import start; import sys; "
+            f"sys.exit(start({repr(mkconfig(**config))}))",
         ]
         env = os.environ.copy()
-        env['PYTHONPATH'] = os.pathsep.join(sys.path)
+        env["PYTHONPATH"] = os.pathsep.join(sys.path)
         return getProcessOutputAndValue(sys.executable, args=args, env=env)
 
     def assert_stderr_ok(self, err):
-        lines = err.split(b'\n')
-        good_warning_parts = [b'32-bit Python on a 64-bit', b'cryptography.hazmat.bindings']
+        lines = err.split(b"\n")
+        good_warning_parts = [
+            b"32-bit Python on a 64-bit",
+            b"cryptography.hazmat.bindings",
+        ]
         for line in lines:
             is_line_good = False
-            if line == b'':
+            if line == b"":
                 is_line_good = True
             else:
                 for part in good_warning_parts:
@@ -100,7 +102,7 @@ class TestStart(misc.StdoutAssertionsMixin, dirs.DirsMixin, unittest.TestCase):
                         is_line_good = True
                         break
             if not is_line_good:
-                self.assertEqual(err, b'')  # not valid warning
+                self.assertEqual(err, b"")  # not valid warning
 
     @defer.inlineCallbacks
     def test_start_no_daemon(self):
@@ -112,43 +114,47 @@ class TestStart(misc.StdoutAssertionsMixin, dirs.DirsMixin, unittest.TestCase):
     def test_start_quiet(self):
         res = yield self.runStart(quiet=True)
 
-        self.assertEqual(res[0], b'')
+        self.assertEqual(res[0], b"")
         self.assert_stderr_ok(res[1])
         self.assertEqual(res[2], 0)
 
-    @skipUnlessPlatformIs('posix')
+    @skipUnlessPlatformIs("posix")
     @defer.inlineCallbacks
     def test_start_timeout_nonnumber(self):
-        (out, err, rc) = yield self.runStart(start_timeout='a')
+        (out, err, rc) = yield self.runStart(start_timeout="a")
 
-        self.assertEqual((rc, err), (1, b''))
-        self.assertSubstring(b'Start timeout must be a number\n', out)
+        self.assertEqual((rc, err), (1, b""))
+        self.assertSubstring(b"Start timeout must be a number\n", out)
 
-    @skipUnlessPlatformIs('posix')
+    @skipUnlessPlatformIs("posix")
     @defer.inlineCallbacks
     def test_start_timeout_number_string(self):
         # integer values from command-line options come in as strings
-        res = yield self.runStart(start_timeout='10')
+        res = yield self.runStart(start_timeout="10")
 
-        self.assertEqual(res, (mock.ANY, b'', 0))
+        self.assertEqual(res, (mock.ANY, b"", 0))
 
-    @skipUnlessPlatformIs('posix')
+    @skipUnlessPlatformIs("posix")
     @defer.inlineCallbacks
     def test_start(self):
         try:
             (out, err, rc) = yield self.runStart()
 
-            self.assertEqual((rc, err), (0, b''))
-            self.assertSubstring(b'buildmaster appears to have (re)started correctly', out)
+            self.assertEqual((rc, err), (0, b""))
+            self.assertSubstring(
+                b"buildmaster appears to have (re)started correctly", out
+            )
         finally:
             # wait for the pidfile to go away after the reactor.stop
             # in buildbot.tac takes effect
-            pidfile = os.path.join('basedir', 'twistd.pid')
+            pidfile = os.path.join("basedir", "twistd.pid")
             while os.path.exists(pidfile):
                 time.sleep(0.01)
 
-    if twisted.version <= versions.Version('twisted', 9, 0, 0):
-        test_start.skip = test_start_quiet.skip = "Skipping due to suprious PotentialZombieWarning."
+    if twisted.version <= versions.Version("twisted", 9, 0, 0):
+        test_start.skip = (
+            test_start_quiet.skip
+        ) = "Skipping due to suprious PotentialZombieWarning."
 
     # the remainder of this script does obscene things:
     #  - forks

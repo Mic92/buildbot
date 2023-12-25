@@ -41,23 +41,28 @@ except ImportError:
 
 
 class LdapUserInfo(avatar.AvatarBase, auth.UserInfoProviderBase):
-    name = 'ldap'
+    name = "ldap"
 
-    def __init__(self, uri, bindUser, bindPw,
-                 accountBase,
-                 accountPattern,
-                 accountFullName,
-                 accountEmail,
-                 groupBase=None,
-                 groupMemberPattern=None,
-                 groupName=None,
-                 avatarPattern=None,
-                 avatarData=None,
-                 accountExtraFields=None,
-                 tls=None):
+    def __init__(
+        self,
+        uri,
+        bindUser,
+        bindPw,
+        accountBase,
+        accountPattern,
+        accountFullName,
+        accountEmail,
+        groupBase=None,
+        groupMemberPattern=None,
+        groupName=None,
+        avatarPattern=None,
+        avatarData=None,
+        accountExtraFields=None,
+        tls=None,
+    ):
         # Throw import error now that this is being used
         if not ldap3:
-            importlib.import_module('ldap3')
+            importlib.import_module("ldap3")
         self.uri = uri
         self.bindUser = bindUser
         self.bindPw = bindPw
@@ -65,13 +70,15 @@ class LdapUserInfo(avatar.AvatarBase, auth.UserInfoProviderBase):
         self.accountEmail = accountEmail
         self.accountPattern = accountPattern
         self.accountFullName = accountFullName
-        group_params = [p for p in (groupName, groupMemberPattern, groupBase)
-                        if p is not None]
+        group_params = [
+            p for p in (groupName, groupMemberPattern, groupBase) if p is not None
+        ]
         if len(group_params) not in (0, 3):
             raise ValueError(
                 "Incomplete LDAP groups configuration. "
                 "To use Ldap groups, you need to specify the three "
-                "parameters (groupName, groupMemberPattern and groupBase). ")
+                "parameters (groupName, groupMemberPattern and groupBase). "
+            )
 
         self.groupName = groupName
         self.groupMemberPattern = groupMemberPattern
@@ -81,26 +88,36 @@ class LdapUserInfo(avatar.AvatarBase, auth.UserInfoProviderBase):
         if accountExtraFields is None:
             accountExtraFields = []
         self.accountExtraFields = accountExtraFields
-        self.ldap_encoding = ldap3.get_config_parameter('DEFAULT_SERVER_ENCODING')
+        self.ldap_encoding = ldap3.get_config_parameter("DEFAULT_SERVER_ENCODING")
         self.tls = tls
 
     def connectLdap(self):
         server = urlparse(self.uri)
         netloc = server.netloc.split(":")
         # define the server and the connection
-        s = ldap3.Server(netloc[0], port=int(netloc[1]), use_ssl=server.scheme == 'ldaps',
-                         get_info=ldap3.ALL, tls=self.tls)
+        s = ldap3.Server(
+            netloc[0],
+            port=int(netloc[1]),
+            use_ssl=server.scheme == "ldaps",
+            get_info=ldap3.ALL,
+            tls=self.tls,
+        )
 
         auth = ldap3.SIMPLE
         if self.bindUser is None and self.bindPw is None:
             auth = ldap3.ANONYMOUS
 
-        c = ldap3.Connection(s, auto_bind=True, client_strategy=ldap3.SYNC,
-                             user=self.bindUser, password=self.bindPw,
-                             authentication=auth)
+        c = ldap3.Connection(
+            s,
+            auto_bind=True,
+            client_strategy=ldap3.SYNC,
+            user=self.bindUser,
+            password=self.bindPw,
+            authentication=auth,
+        )
         return c
 
-    def search(self, c, base, filterstr='f', attributes=None):
+    def search(self, c, base, filterstr="f", attributes=None):
         c.search(base, filterstr, ldap3.SUBTREE, attributes=attributes)
         return c.response
 
@@ -109,39 +126,45 @@ class LdapUserInfo(avatar.AvatarBase, auth.UserInfoProviderBase):
 
         def thd():
             c = self.connectLdap()
-            infos = {'username': username}
+            infos = {"username": username}
             pattern = self.accountPattern % {"username": username}
-            res = self.search(c, self.accountBase, pattern,
-                              attributes=[
-                                  self.accountEmail, self.accountFullName] +
-                              self.accountExtraFields)
+            res = self.search(
+                c,
+                self.accountBase,
+                pattern,
+                attributes=[self.accountEmail, self.accountFullName]
+                + self.accountExtraFields,
+            )
             if len(res) != 1:
-                raise KeyError(f"ldap search \"{pattern}\" returned {len(res)} results")
-            dn, ldap_infos = res[0]['dn'], res[0]['attributes']
+                raise KeyError(f'ldap search "{pattern}" returned {len(res)} results')
+            dn, ldap_infos = res[0]["dn"], res[0]["attributes"]
 
             def getFirstLdapInfo(x):
                 if isinstance(x, list):
                     x = x[0] if x else None
                 return x
 
-            infos['full_name'] = getFirstLdapInfo(ldap_infos[self.accountFullName])
-            infos['email'] = getFirstLdapInfo(ldap_infos[self.accountEmail])
+            infos["full_name"] = getFirstLdapInfo(ldap_infos[self.accountFullName])
+            infos["email"] = getFirstLdapInfo(ldap_infos[self.accountEmail])
             for f in self.accountExtraFields:
                 if f in ldap_infos:
                     infos[f] = getFirstLdapInfo(ldap_infos[f])
 
             if self.groupMemberPattern is None:
-                infos['groups'] = []
+                infos["groups"] = []
                 return infos
 
             # needs double quoting of backslashing
-            pattern = self.groupMemberPattern % {"dn": ldap3.utils.conv.escape_filter_chars(dn)}
-            res = self.search(c, self.groupBase, pattern,
-                              attributes=[self.groupName])
-            infos['groups'] = flatten([group_infos['attributes'][self.groupName]
-                                      for group_infos in res])
+            pattern = self.groupMemberPattern % {
+                "dn": ldap3.utils.conv.escape_filter_chars(dn)
+            }
+            res = self.search(c, self.groupBase, pattern, attributes=[self.groupName])
+            infos["groups"] = flatten(
+                [group_infos["attributes"][self.groupName] for group_infos in res]
+            )
 
             return infos
+
         return threads.deferToThread(thd)
 
     def findAvatarMime(self, data):
@@ -169,13 +192,15 @@ class LdapUserInfo(avatar.AvatarBase, auth.UserInfoProviderBase):
                 pattern = self.avatarPattern % {"email": email}
             else:
                 return None
-            res = self.search(c, self.accountBase, pattern,
-                              attributes=[self.avatarData])
+            res = self.search(
+                c, self.accountBase, pattern, attributes=[self.avatarData]
+            )
             if not res:
                 return None
-            ldap_infos = res[0]['raw_attributes']
+            ldap_infos = res[0]["raw_attributes"]
             if self.avatarData in ldap_infos and ldap_infos[self.avatarData]:
                 data = ldap_infos[self.avatarData][0]
                 return self.findAvatarMime(data)
             return None
+
         return threads.deferToThread(thd)

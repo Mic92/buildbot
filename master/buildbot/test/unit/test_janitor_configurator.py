@@ -39,21 +39,33 @@ from buildbot.util import datetime2epoch
 from buildbot.worker.local import LocalWorker
 
 
-class JanitorConfiguratorTests(configurators.ConfiguratorMixin, unittest.SynchronousTestCase):
+class JanitorConfiguratorTests(
+    configurators.ConfiguratorMixin, unittest.SynchronousTestCase
+):
     ConfiguratorClass = JanitorConfigurator
 
     def test_nothing(self):
         self.setupConfigurator()
-        self.assertEqual(self.config_dict, {
-        })
+        self.assertEqual(self.config_dict, {})
 
-    @parameterized.expand([
-        ('logs', {'logHorizon': timedelta(weeks=1)}, [LogChunksJanitor]),
-        ('build_data', {'build_data_horizon': timedelta(weeks=1)}, [BuildDataJanitor]),
-        ('logs_build_data', {'build_data_horizon': timedelta(weeks=1),
-                             'logHorizon': timedelta(weeks=1)},
-         [LogChunksJanitor, BuildDataJanitor]),
-    ])
+    @parameterized.expand(
+        [
+            ("logs", {"logHorizon": timedelta(weeks=1)}, [LogChunksJanitor]),
+            (
+                "build_data",
+                {"build_data_horizon": timedelta(weeks=1)},
+                [BuildDataJanitor],
+            ),
+            (
+                "logs_build_data",
+                {
+                    "build_data_horizon": timedelta(weeks=1),
+                    "logHorizon": timedelta(weeks=1),
+                },
+                [LogChunksJanitor, BuildDataJanitor],
+            ),
+        ]
+    )
     def test_steps(self, name, configuration, exp_steps):
         self.setupConfigurator(**configuration)
         self.expectWorker(JANITOR_NAME, LocalWorker)
@@ -63,11 +75,12 @@ class JanitorConfiguratorTests(configurators.ConfiguratorMixin, unittest.Synchro
         self.expectNoConfigError()
 
 
-class LogChunksJanitorTests(TestBuildStepMixin,
-                            configmixin.ConfigErrorsMixin,
-                            TestReactorMixin,
-                            unittest.TestCase):
-
+class LogChunksJanitorTests(
+    TestBuildStepMixin,
+    configmixin.ConfigErrorsMixin,
+    TestReactorMixin,
+    unittest.TestCase,
+):
     @defer.inlineCallbacks
     def setUp(self):
         self.setup_test_reactor()
@@ -79,20 +92,26 @@ class LogChunksJanitorTests(TestBuildStepMixin,
 
     @defer.inlineCallbacks
     def test_basic(self):
-        self.setup_step(
-            LogChunksJanitor(logHorizon=timedelta(weeks=1)))
+        self.setup_step(LogChunksJanitor(logHorizon=timedelta(weeks=1)))
         self.master.db.logs.deleteOldLogChunks = mock.Mock(return_value=3)
-        self.expect_outcome(result=SUCCESS,
-                           state_string="deleted 3 logchunks")
+        self.expect_outcome(result=SUCCESS, state_string="deleted 3 logchunks")
         yield self.run_step()
-        expected_timestamp = datetime2epoch(datetime.datetime(year=2016, month=12, day=25))
+        expected_timestamp = datetime2epoch(
+            datetime.datetime(year=2016, month=12, day=25)
+        )
         self.master.db.logs.deleteOldLogChunks.assert_called_with(expected_timestamp)
 
     @defer.inlineCallbacks
     def test_build_data(self):
         self.setup_step(BuildDataJanitor(build_data_horizon=timedelta(weeks=1)))
         self.master.db.build_data.deleteOldBuildData = mock.Mock(return_value=4)
-        self.expect_outcome(result=SUCCESS, state_string="deleted 4 build data key-value pairs")
+        self.expect_outcome(
+            result=SUCCESS, state_string="deleted 4 build data key-value pairs"
+        )
         yield self.run_step()
-        expected_timestamp = datetime2epoch(datetime.datetime(year=2016, month=12, day=25))
-        self.master.db.build_data.deleteOldBuildData.assert_called_with(expected_timestamp)
+        expected_timestamp = datetime2epoch(
+            datetime.datetime(year=2016, month=12, day=25)
+        )
+        self.master.db.build_data.deleteOldBuildData.assert_called_with(
+            expected_timestamp
+        )

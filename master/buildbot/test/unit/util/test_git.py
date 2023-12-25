@@ -25,7 +25,6 @@ from buildbot.util.git import getSshKnownHostsContents
 
 
 class TestEscapeShellArgIfNeeded(unittest.TestCase):
-
     def assert_escapes(self, arg):
         escaped = f'"{arg}"'
         self.assertEqual(escapeShellArgIfNeeded(arg), escaped)
@@ -34,41 +33,57 @@ class TestEscapeShellArgIfNeeded(unittest.TestCase):
         self.assertEqual(escapeShellArgIfNeeded(arg), arg)
 
     def test_empty(self):
-        self.assert_escapes('')
+        self.assert_escapes("")
 
     def test_spaces(self):
-        self.assert_escapes(' ')
-        self.assert_escapes('a ')
-        self.assert_escapes(' a')
-        self.assert_escapes('a b')
+        self.assert_escapes(" ")
+        self.assert_escapes("a ")
+        self.assert_escapes(" a")
+        self.assert_escapes("a b")
 
     def test_special(self):
-        self.assert_escapes('a=b')
-        self.assert_escapes('a%b')
-        self.assert_escapes('a(b')
-        self.assert_escapes('a[b')
+        self.assert_escapes("a=b")
+        self.assert_escapes("a%b")
+        self.assert_escapes("a(b")
+        self.assert_escapes("a[b")
 
     def test_no_escape(self):
-        self.assert_does_not_escape('abc')
-        self.assert_does_not_escape('a_b')
-        self.assert_does_not_escape('-opt')
-        self.assert_does_not_escape('--opt')
+        self.assert_does_not_escape("abc")
+        self.assert_does_not_escape("a_b")
+        self.assert_does_not_escape("-opt")
+        self.assert_does_not_escape("--opt")
 
 
 class TestSetUpGit(GitMixin, unittest.TestCase, config.ConfigErrorsMixin):
-
-    @parameterized.expand([
-        ('no_keys', None, None, None, None),
-        ('only_private_key', 'key', None, None, None),
-        ('private_key_host_key', 'key', 'host', None, None),
-        ('private_key_known_hosts', 'key', None, 'hosts', None),
-        ('no_private_key_host_key', None, 'host', None,
-         'sshPrivateKey must be provided in order use sshHostKey'),
-        ('no_private_key_known_hosts', None, None, 'hosts',
-         'sshPrivateKey must be provided in order use sshKnownHosts'),
-        ('both_host_key_known_hosts', 'key', 'host', 'hosts',
-         'only one of sshKnownHosts and sshHostKey can be provided'),
-    ])
+    @parameterized.expand(
+        [
+            ("no_keys", None, None, None, None),
+            ("only_private_key", "key", None, None, None),
+            ("private_key_host_key", "key", "host", None, None),
+            ("private_key_known_hosts", "key", None, "hosts", None),
+            (
+                "no_private_key_host_key",
+                None,
+                "host",
+                None,
+                "sshPrivateKey must be provided in order use sshHostKey",
+            ),
+            (
+                "no_private_key_known_hosts",
+                None,
+                None,
+                "hosts",
+                "sshPrivateKey must be provided in order use sshKnownHosts",
+            ),
+            (
+                "both_host_key_known_hosts",
+                "key",
+                "host",
+                "hosts",
+                "only one of sshKnownHosts and sshHostKey can be provided",
+            ),
+        ]
+    )
     def test_config(self, name, private_key, host_key, known_hosts, config_error):
         self.sshPrivateKey = private_key
         self.sshHostKey = host_key
@@ -81,7 +96,6 @@ class TestSetUpGit(GitMixin, unittest.TestCase, config.ConfigErrorsMixin):
 
 
 class TestParseGitFeatures(GitMixin, unittest.TestCase):
-
     def setUp(self):
         self.sshPrivateKey = None
         self.sshHostKey = None
@@ -89,7 +103,7 @@ class TestParseGitFeatures(GitMixin, unittest.TestCase):
         self.setupGit()
 
     def test_no_output(self):
-        self.parseGitFeatures('')
+        self.parseGitFeatures("")
         self.assertFalse(self.gitInstalled)
         self.assertFalse(self.supportsBranch)
         self.assertFalse(self.supportsSubmoduleForce)
@@ -98,7 +112,7 @@ class TestParseGitFeatures(GitMixin, unittest.TestCase):
         self.assertFalse(self.supportsSshPrivateKeyAsConfigOption)
 
     def test_git_noversion(self):
-        self.parseGitFeatures('git')
+        self.parseGitFeatures("git")
         self.assertFalse(self.gitInstalled)
         self.assertFalse(self.supportsBranch)
         self.assertFalse(self.supportsSubmoduleForce)
@@ -107,7 +121,7 @@ class TestParseGitFeatures(GitMixin, unittest.TestCase):
         self.assertFalse(self.supportsSshPrivateKeyAsConfigOption)
 
     def test_git_zero_version(self):
-        self.parseGitFeatures('git version 0.0.0')
+        self.parseGitFeatures("git version 0.0.0")
         self.assertTrue(self.gitInstalled)
         self.assertFalse(self.supportsBranch)
         self.assertFalse(self.supportsSubmoduleForce)
@@ -116,7 +130,7 @@ class TestParseGitFeatures(GitMixin, unittest.TestCase):
         self.assertFalse(self.supportsSshPrivateKeyAsConfigOption)
 
     def test_git_2_10_0(self):
-        self.parseGitFeatures('git version 2.10.0')
+        self.parseGitFeatures("git version 2.10.0")
         self.assertTrue(self.gitInstalled)
         self.assertTrue(self.supportsBranch)
         self.assertTrue(self.supportsSubmoduleForce)
@@ -132,37 +146,36 @@ class TestAdjustCommandParamsForSshPrivateKey(GitMixin, unittest.TestCase):
         command = []
         env = {}
         with self.assertRaises(Exception):
-            self.adjustCommandParamsForSshPrivateKey(command, env,
-                                                     'path/to/key')
+            self.adjustCommandParamsForSshPrivateKey(command, env, "path/to/key")
 
 
 class TestGetSshKnownHostsContents(unittest.TestCase):
     def test(self):
-        key = 'ssh-rsa AAAA<...>WsHQ=='
+        key = "ssh-rsa AAAA<...>WsHQ=="
 
-        expected = '* ssh-rsa AAAA<...>WsHQ=='
+        expected = "* ssh-rsa AAAA<...>WsHQ=="
         self.assertEqual(expected, getSshKnownHostsContents(key))
 
 
 class TestensureSshKeyNewline(unittest.TestCase):
-
     def setUp(self):
-        self.sshGoodPrivateKey = \
-"""-----BEGIN SSH PRIVATE KEY-----
+        self.sshGoodPrivateKey = """-----BEGIN SSH PRIVATE KEY-----
 base64encodedkeydata
 -----END SSH PRIVATE KEY-----
 """
-        self.sshMissingNewlinePrivateKey = \
-"""-----BEGIN SSH PRIVATE KEY-----
+        self.sshMissingNewlinePrivateKey = """-----BEGIN SSH PRIVATE KEY-----
 base64encodedkeydata
 -----END SSH PRIVATE KEY-----"""
 
     def test_good_key(self):
         """Don't break good keys"""
-        self.assertEqual(self.sshGoodPrivateKey,
-                         ensureSshKeyNewline(self.sshGoodPrivateKey))
+        self.assertEqual(
+            self.sshGoodPrivateKey, ensureSshKeyNewline(self.sshGoodPrivateKey)
+        )
 
     def test_missing_newline(self):
         """Add missing newline to stripped keys"""
-        self.assertEqual(self.sshGoodPrivateKey,
-                         ensureSshKeyNewline(self.sshMissingNewlinePrivateKey))
+        self.assertEqual(
+            self.sshGoodPrivateKey,
+            ensureSshKeyNewline(self.sshMissingNewlinePrivateKey),
+        )

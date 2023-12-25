@@ -22,7 +22,6 @@ from buildbot.util import sautils
 
 
 class Migration(migration.MigrateTestMixin, unittest.TestCase):
-
     def setUp(self):
         return self.setUpMigrateTest()
 
@@ -35,32 +34,38 @@ class Migration(migration.MigrateTestMixin, unittest.TestCase):
 
         # buildid foreign key is removed for the purposes of the test
         steps = sautils.Table(
-            'steps', metadata,
-            sa.Column('id', sa.Integer, primary_key=True),
-            sa.Column('number', sa.Integer, nullable=False),
-            sa.Column('name', sa.String(50), nullable=False),
-            sa.Column('buildid', sa.Integer, nullable=True),
-            sa.Column('started_at', sa.Integer),
-            sa.Column('complete_at', sa.Integer),
-            sa.Column('state_string', sa.Text, nullable=False),
-            sa.Column('results', sa.Integer),
-            sa.Column('urls_json', sa.Text, nullable=False),
-            sa.Column('hidden', sa.SmallInteger, nullable=False, server_default='0'),
+            "steps",
+            metadata,
+            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("number", sa.Integer, nullable=False),
+            sa.Column("name", sa.String(50), nullable=False),
+            sa.Column("buildid", sa.Integer, nullable=True),
+            sa.Column("started_at", sa.Integer),
+            sa.Column("complete_at", sa.Integer),
+            sa.Column("state_string", sa.Text, nullable=False),
+            sa.Column("results", sa.Integer),
+            sa.Column("urls_json", sa.Text, nullable=False),
+            sa.Column("hidden", sa.SmallInteger, nullable=False, server_default="0"),
         )
         steps.create()
 
-        conn.execute(steps.insert(), [{
-            "id": 4,
-            "number": 123,
-            "name": "step",
-            "buildid": 12,
-            "started_at": 1690848000,
-            "complete_at": 1690848030,
-            "state_string": "state",
-            "results": 0,
-            "urls_json": "",
-            "hidden": 0,
-        }])
+        conn.execute(
+            steps.insert(),
+            [
+                {
+                    "id": 4,
+                    "number": 123,
+                    "name": "step",
+                    "buildid": 12,
+                    "started_at": 1690848000,
+                    "complete_at": 1690848030,
+                    "state_string": "state",
+                    "results": 0,
+                    "urls_json": "",
+                    "hidden": 0,
+                }
+            ],
+        )
 
     def test_update(self):
         def setup_thd(conn):
@@ -70,13 +75,15 @@ class Migration(migration.MigrateTestMixin, unittest.TestCase):
             metadata = sa.MetaData()
             metadata.bind = conn
 
-            steps = sautils.Table('steps', metadata, autoload=True)
+            steps = sautils.Table("steps", metadata, autoload=True)
             self.assertIsInstance(steps.c.locks_acquired_at.type, sa.Integer)
 
-            q = sa.select([
-                steps.c.name,
-                steps.c.locks_acquired_at,
-            ])
+            q = sa.select(
+                [
+                    steps.c.name,
+                    steps.c.locks_acquired_at,
+                ]
+            )
 
             num_rows = 0
             for row in conn.execute(q):
@@ -85,4 +92,4 @@ class Migration(migration.MigrateTestMixin, unittest.TestCase):
                 num_rows += 1
             self.assertEqual(num_rows, 1)
 
-        return self.do_test_migration('062', '063', setup_thd, verify_thd)
+        return self.do_test_migration("062", "063", setup_thd, verify_thd)

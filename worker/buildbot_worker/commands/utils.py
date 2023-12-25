@@ -33,7 +33,7 @@ def getCommand(name):
     # does not seem to work properly with regard to errors raised
     # and caught in buildbot worker command (vcs.py)
     #
-    if runtime.platformType == 'win32' and len(possibles) > 1:
+    if runtime.platformType == "win32" and len(possibles) > 1:
         possibles_exe = which(name + ".exe")
         if possibles_exe:
             return possibles_exe[0]
@@ -41,11 +41,12 @@ def getCommand(name):
 
 
 # this just keeps pyflakes happy on non-Windows systems
-if runtime.platformType != 'win32':
+if runtime.platformType != "win32":
     WindowsError = RuntimeError
 
 
-if runtime.platformType == 'win32':  # pragma: no cover
+if runtime.platformType == "win32":  # pragma: no cover
+
     def rmdirRecursive(dir):
         """This is a replacement for shutil.rmtree that works better under
         windows. Thanks to Bear at the OSAF for the code."""
@@ -72,9 +73,11 @@ if runtime.platformType == 'win32':  # pragma: no cover
         try:
             list = os.listdir(dir)
         except WindowsError as e:
-            msg = ("rmdirRecursive: unable to listdir {0} ({1}). Trying to "
-                   "remove like a dir".format(dir, e.strerror.decode('mbcs')))
-            log.msg(msg.encode('utf-8'))
+            msg = (
+                "rmdirRecursive: unable to listdir {0} ({1}). Trying to "
+                "remove like a dir".format(dir, e.strerror.decode("mbcs"))
+            )
+            log.msg(msg.encode("utf-8"))
             os.rmdir(dir)
             return
 
@@ -82,7 +85,7 @@ if runtime.platformType == 'win32':  # pragma: no cover
             full_name = os.path.join(dir, name)
             # on Windows, if we don't have write permission we can't remove
             # the file/directory either, so turn that on
-            if os.name == 'nt':
+            if os.name == "nt":
                 if not os.access(full_name, os.W_OK):
                     # I think this is now redundant, but I don't have an NT
                     # machine to test on, so I'm going to leave it in place
@@ -101,4 +104,5 @@ if runtime.platformType == 'win32':  # pragma: no cover
 else:
     # use rmtree on POSIX
     import shutil
+
     rmdirRecursive = shutil.rmtree

@@ -29,14 +29,13 @@ def forceScheduler2Data(sched):
         "button_name": str(sched.buttonName),
         "label": str(sched.label),
         "builder_names": [str(name) for name in sched.builderNames],
-        "enabled": sched.enabled
+        "enabled": sched.enabled,
     }
     ret["all_fields"] = [field.getSpec() for field in sched.all_fields]
     return ret
 
 
 class ForceSchedulerEndpoint(base.Endpoint):
-
     kind = base.EndpointKind.SINGLE
     pathPatterns = """
         /forceschedulers/i:schedulername
@@ -45,13 +44,15 @@ class ForceSchedulerEndpoint(base.Endpoint):
     def findForceScheduler(self, schedulername):
         # eventually this may be db backed. This is why the API is async
         for sched in self.master.allSchedulers():
-            if sched.name == schedulername and isinstance(sched, forcesched.ForceScheduler):
+            if sched.name == schedulername and isinstance(
+                sched, forcesched.ForceScheduler
+            ):
                 return defer.succeed(sched)
         return None
 
     @defer.inlineCallbacks
     def get(self, resultSpec, kwargs):
-        sched = yield self.findForceScheduler(kwargs['schedulername'])
+        sched = yield self.findForceScheduler(kwargs["schedulername"])
         if sched is not None:
             return forceScheduler2Data(sched)
         return None
@@ -59,9 +60,9 @@ class ForceSchedulerEndpoint(base.Endpoint):
     @defer.inlineCallbacks
     def control(self, action, args, kwargs):
         if action == "force":
-            sched = yield self.findForceScheduler(kwargs['schedulername'])
+            sched = yield self.findForceScheduler(kwargs["schedulername"])
             if "owner" not in args:
-                args['owner'] = "user"
+                args["owner"] = "user"
             try:
                 res = yield sched.force(**args)
                 return res
@@ -71,30 +72,28 @@ class ForceSchedulerEndpoint(base.Endpoint):
 
 
 class ForceSchedulersEndpoint(base.Endpoint):
-
     kind = base.EndpointKind.COLLECTION
     pathPatterns = """
         /forceschedulers
         /builders/:builderid/forceschedulers
     """
-    rootLinkName = 'forceschedulers'
+    rootLinkName = "forceschedulers"
 
     @defer.inlineCallbacks
     def get(self, resultSpec, kwargs):
         ret = []
-        builderid = kwargs.get('builderid', None)
+        builderid = kwargs.get("builderid", None)
         if builderid is not None:
             bdict = yield self.master.db.builders.getBuilder(builderid)
         for sched in self.master.allSchedulers():
             if isinstance(sched, forcesched.ForceScheduler):
-                if builderid is not None and bdict['name'] not in sched.builderNames:
+                if builderid is not None and bdict["name"] not in sched.builderNames:
                     continue
                 ret.append(forceScheduler2Data(sched))
         return ret
 
 
 class ForceScheduler(base.ResourceType):
-
     name = "forcescheduler"
     plural = "forceschedulers"
     endpoints = [ForceSchedulerEndpoint, ForceSchedulersEndpoint]
@@ -107,4 +106,5 @@ class ForceScheduler(base.ResourceType):
         builder_names = types.List(of=types.Identifier(50))
         enabled = types.Boolean()
         all_fields = types.List(of=types.JsonObject())
-    entityType = EntityType(name, 'Forcescheduler')
+
+    entityType = EntityType(name, "Forcescheduler")

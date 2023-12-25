@@ -36,7 +36,7 @@ class V3RootResource(TestReactorMixin, www.WwwTestMixin, unittest.TestCase):
         skip = "graphql is required for V3RootResource tests"
 
     def setUp(self):
-        self.patch(connector.DataConnector, 'submodules', [])
+        self.patch(connector.DataConnector, "submodules", [])
         self.setup_test_reactor(use_asyncio=True)
         self.master = self.make_master(url="http://server/path/", wantGraphql=True)
         self.master.config.www["graphql"] = {"debug": True}
@@ -200,7 +200,6 @@ class V3RootResource(TestReactorMixin, www.WwwTestMixin, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_post_query_json_badcontent_type(self):
-
         yield self.render_resource(
             self.rsrc, method=b"POST", content=b"foo", content_type=b"application/foo"
         )
@@ -208,7 +207,6 @@ class V3RootResource(TestReactorMixin, www.WwwTestMixin, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_post_query_json_nocontent_type(self):
-
         yield self.render_resource(self.rsrc, method=b"POST")
         self.assertSimpleError("no content-type", 400)
 

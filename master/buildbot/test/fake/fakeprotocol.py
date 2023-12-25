@@ -20,7 +20,6 @@ from buildbot.worker.protocols import base
 
 
 class FakeTrivialConnection(base.Connection):
-
     info = {}
 
     def __init__(self):
@@ -34,7 +33,6 @@ class FakeTrivialConnection(base.Connection):
 
 
 class FakeConnection(base.Connection):
-
     def __init__(self, worker):
         super().__init__(worker.workername)
         self._connected = True
@@ -43,44 +41,53 @@ class FakeConnection(base.Connection):
 
         # users of the fake can add to this as desired
         self.info = {
-            'worker_commands': [],
-            'version': '0.9.0',
-            'basedir': '/w',
-            'system': 'nt',
+            "worker_commands": [],
+            "version": "0.9.0",
+            "basedir": "/w",
+            "system": "nt",
         }
 
     def loseConnection(self):
         self.notifyDisconnected()
 
     def remotePrint(self, message):
-        self.remoteCalls.append(('remotePrint', message))
+        self.remoteCalls.append(("remotePrint", message))
         return defer.succeed(None)
 
     def remoteGetWorkerInfo(self):
-        self.remoteCalls.append(('remoteGetWorkerInfo',))
+        self.remoteCalls.append(("remoteGetWorkerInfo",))
         return defer.succeed(self.info)
 
     def remoteSetBuilderList(self, builders):
-        self.remoteCalls.append(('remoteSetBuilderList', builders[:]))
+        self.remoteCalls.append(("remoteSetBuilderList", builders[:]))
         self.builders = dict((b, False) for b in builders)
         return defer.succeed(None)
 
-    def remoteStartCommand(self, remoteCommand, builderName, commandId, commandName, args):
-        self.remoteCalls.append(('remoteStartCommand', remoteCommand, builderName,
-                                 commandId, commandName, args))
+    def remoteStartCommand(
+        self, remoteCommand, builderName, commandId, commandName, args
+    ):
+        self.remoteCalls.append(
+            (
+                "remoteStartCommand",
+                remoteCommand,
+                builderName,
+                commandId,
+                commandName,
+                args,
+            )
+        )
         return defer.succeed(None)
 
     def remoteShutdown(self):
-        self.remoteCalls.append(('remoteShutdown',))
+        self.remoteCalls.append(("remoteShutdown",))
         return defer.succeed(None)
 
     def remoteStartBuild(self, builderName):
-        self.remoteCalls.append(('remoteStartBuild', builderName))
+        self.remoteCalls.append(("remoteStartBuild", builderName))
         return defer.succeed(None)
 
     def remoteInterruptCommand(self, builderName, commandId, why):
-        self.remoteCalls.append(
-            ('remoteInterruptCommand', builderName, commandId, why))
+        self.remoteCalls.append(("remoteInterruptCommand", builderName, commandId, why))
         return defer.succeed(None)
 
     def get_peer(self):

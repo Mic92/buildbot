@@ -23,8 +23,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '065'
-down_revision = '064'
+revision = "065"
+down_revision = "064"
 branch_labels = None
 depends_on = None
 
@@ -32,10 +32,17 @@ depends_on = None
 def upgrade():
     with op.batch_alter_table("buildsets") as batch_op:
         batch_op.add_column(
-            sa.Column("rebuilt_buildid", sa.Integer,
-                      sa.ForeignKey("builds.id", use_alter=True, name="rebuilt_buildid",
-                                    ondelete='SET NULL'),
-                      nullable=True),
+            sa.Column(
+                "rebuilt_buildid",
+                sa.Integer,
+                sa.ForeignKey(
+                    "builds.id",
+                    use_alter=True,
+                    name="rebuilt_buildid",
+                    ondelete="SET NULL",
+                ),
+                nullable=True,
+            ),
         )
 
 

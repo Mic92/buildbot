@@ -66,25 +66,27 @@ class KubeConfigLoaderBase(service.BuildbotService):
 
 
 class KubeHardcodedConfig(KubeConfigLoaderBase):
-    def reconfigService(self,
-                        master_url=None,
-                        bearerToken=None,
-                        basicAuth=None,
-                        headers=None,
-                        cert=None,
-                        verify=None,
-                        namespace="default"):
-        self.config = {'master_url': master_url, 'namespace': namespace, 'headers': {}}
+    def reconfigService(
+        self,
+        master_url=None,
+        bearerToken=None,
+        basicAuth=None,
+        headers=None,
+        cert=None,
+        verify=None,
+        namespace="default",
+    ):
+        self.config = {"master_url": master_url, "namespace": namespace, "headers": {}}
         if headers is not None:
-            self.config['headers'] = headers
+            self.config["headers"] = headers
         if basicAuth and bearerToken:
             raise RuntimeError("set one of basicAuth and bearerToken, not both")
         self.basicAuth = basicAuth
         self.bearerToken = bearerToken
         if cert is not None:
-            self.config['cert'] = cert
+            self.config["cert"] = cert
         if verify is not None:
-            self.config['verify'] = verify
+            self.config["verify"] = verify
 
     checkConfig = reconfigService
 
@@ -92,7 +94,7 @@ class KubeHardcodedConfig(KubeConfigLoaderBase):
     def getAuthorization(self):
         if self.basicAuth is not None:
             basicAuth = yield self.renderSecrets(self.basicAuth)
-            authstring = f"{basicAuth['user']}:{basicAuth['password']}".encode('utf-8')
+            authstring = f"{basicAuth['user']}:{basicAuth['password']}".encode("utf-8")
             encoded = base64.b64encode(authstring)
             return f"Basic {encoded}"
 
@@ -107,13 +109,14 @@ class KubeHardcodedConfig(KubeConfigLoaderBase):
 
 
 class KubeCtlProxyConfigLoader(KubeConfigLoaderBase):
-    """ We use kubectl proxy to connect to kube master.
+    """We use kubectl proxy to connect to kube master.
     Parsing the config and setting up SSL is complex.
     So for now, we use kubectl proxy to load the config and connect to master.
     This will run the kube proxy as a subprocess, and return configuration with
     http://localhost:PORT
     """
-    kube_ctl_proxy_cmd = ['kubectl', 'proxy']  # for tests override
+
+    kube_ctl_proxy_cmd = ["kubectl", "proxy"]  # for tests override
 
     class LocalPP(LineProcessProtocol):
         def __init__(self):
@@ -165,7 +168,7 @@ class KubeCtlProxyConfigLoader(KubeConfigLoaderBase):
             self.pp,
             self.kube_ctl_proxy_cmd[0],
             self.kube_ctl_proxy_cmd + ["-p", str(self.proxy_port)],
-            env=os.environ
+            env=os.environ,
         )
         self.kube_proxy_output = yield self.pp.got_output_deferred
 
@@ -185,33 +188,33 @@ class KubeCtlProxyConfigLoader(KubeConfigLoaderBase):
 
     def getConfig(self):
         return {
-            'master_url': f"http://localhost:{self.proxy_port}",
-            'namespace': self.namespace
+            "master_url": f"http://localhost:{self.proxy_port}",
+            "namespace": self.namespace,
         }
 
 
 class KubeInClusterConfigLoader(KubeConfigLoaderBase):
-    kube_dir = '/var/run/secrets/kubernetes.io/serviceaccount/'
+    kube_dir = "/var/run/secrets/kubernetes.io/serviceaccount/"
 
-    kube_namespace_file = os.path.join(kube_dir, 'namespace')
-    kube_token_file = os.path.join(kube_dir, 'token')
-    kube_cert_file = os.path.join(kube_dir, 'ca.crt')
+    kube_namespace_file = os.path.join(kube_dir, "namespace")
+    kube_token_file = os.path.join(kube_dir, "token")
+    kube_cert_file = os.path.join(kube_dir, "ca.crt")
 
     def checkConfig(self):
         if not os.path.exists(self.kube_dir):
-            config.error(f"Not in kubernetes cluster (kube_dir not found: {self.kube_dir})")
+            config.error(
+                f"Not in kubernetes cluster (kube_dir not found: {self.kube_dir})"
+            )
 
     def reconfigService(self):
         self.config = {}
-        self.config['master_url'] = self.get_master_url()
-        self.config['verify'] = self.kube_cert_file
+        self.config["master_url"] = self.get_master_url()
+        self.config["verify"] = self.kube_cert_file
         with open(self.kube_token_file, encoding="utf-8") as token_content:
             token = token_content.read().strip()
-            self.config['headers'] = {
-                'Authorization': f'Bearer {token}'.format(token)
-            }
+            self.config["headers"] = {"Authorization": f"Bearer {token}".format(token)}
         with open(self.kube_namespace_file, encoding="utf-8") as namespace_content:
-            self.config['namespace'] = namespace_content.read().strip()
+            self.config["namespace"] = namespace_content.read().strip()
 
     def getConfig(self):
         return self.config
@@ -221,7 +224,6 @@ class KubeInClusterConfigLoader(KubeConfigLoaderBase):
 
 
 class KubeClientService(service.SharedService):
-
     name = "KubeClientService"
 
     def __init__(self, *args, **kwargs):

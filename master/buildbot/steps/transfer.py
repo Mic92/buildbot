@@ -35,7 +35,8 @@ from buildbot.util import flatten
 
 def makeStatusRemoteCommand(step, remote_command, args):
     self = remotecommand.RemoteCommand(
-        remote_command, args, decodeRC={None: SUCCESS, 0: SUCCESS})
+        remote_command, args, decodeRC={None: SUCCESS, 0: SUCCESS}
+    )
     self.useLog(step.stdio_log)
     return self
 
@@ -47,7 +48,7 @@ class _TransferBuildStep(BuildStep):
     functionality.
     """
 
-    renderables = ['workdir']
+    renderables = ["workdir"]
 
     haltOnFailure = True
     flunkOnFailure = True
@@ -70,27 +71,35 @@ class _TransferBuildStep(BuildStep):
 
     @defer.inlineCallbacks
     def interrupt(self, reason):
-        yield self.addCompleteLog('interrupt', str(reason))
+        yield self.addCompleteLog("interrupt", str(reason))
         if self.cmd:
             yield self.cmd.interrupt(reason)
         return None
 
 
 class FileUpload(_TransferBuildStep):
-
-    name = 'upload'
+    name = "upload"
 
     renderables = [
-        'masterdest',
-        'url',
-        'urlText',
-        'workersrc',
+        "masterdest",
+        "url",
+        "urlText",
+        "workersrc",
     ]
 
-    def __init__(self, workersrc=None, masterdest=None,
-                 workdir=None, maxsize=None, blocksize=256 * 1024, mode=None,
-                 keepstamp=False, url=None, urlText=None,
-                 **buildstep_kwargs):
+    def __init__(
+        self,
+        workersrc=None,
+        masterdest=None,
+        workdir=None,
+        maxsize=None,
+        blocksize=256 * 1024,
+        mode=None,
+        keepstamp=False,
+        url=None,
+        urlText=None,
+        **buildstep_kwargs,
+    ):
         # Emulate that first two arguments are positional.
         if workersrc is None or masterdest is None:
             raise TypeError("__init__() takes at least 3 arguments")
@@ -102,8 +111,7 @@ class FileUpload(_TransferBuildStep):
         self.maxsize = maxsize
         self.blocksize = blocksize
         if not isinstance(mode, (int, type(None))):
-            config.error(
-                'mode must be an integer or None')
+            config.error("mode must be an integer or None")
         self.mode = mode
         self.keepstamp = keepstamp
         self.url = url
@@ -121,10 +129,12 @@ class FileUpload(_TransferBuildStep):
         # properly. TODO: maybe pass the master's basedir all the way down
         # into the BuildStep so we can do this better.
         masterdest = os.path.expanduser(masterdest)
-        log.msg(f"FileUpload started, from worker {repr(source)} to master {repr(masterdest)}")
+        log.msg(
+            f"FileUpload started, from worker {repr(source)} to master {repr(masterdest)}"
+        )
 
         if self.description is None:
-            self.description = [f'uploading {os.path.basename(source)}']
+            self.description = [f"uploading {os.path.basename(source)}"]
 
         if self.descriptionDone is None:
             self.descriptionDone = self.description
@@ -138,53 +148,56 @@ class FileUpload(_TransferBuildStep):
             yield self.addURL(urlText, self.url)
 
         # we use maxsize to limit the amount of data on both sides
-        fileWriter = remotetransfer.FileWriter(
-            masterdest, self.maxsize, self.mode)
+        fileWriter = remotetransfer.FileWriter(masterdest, self.maxsize, self.mode)
 
         if self.keepstamp and self.workerVersionIsOlderThan("uploadFile", "2.13"):
-            m = (f"This worker ({self.build.workername}) does not support preserving timestamps. "
-                 "Please upgrade the worker.")
+            m = (
+                f"This worker ({self.build.workername}) does not support preserving timestamps. "
+                "Please upgrade the worker."
+            )
             raise WorkerSetupError(m)
 
         # default arguments
         args = {
-            'workdir': self.workdir,
-            'writer': fileWriter,
-            'maxsize': self.maxsize,
-            'blocksize': self.blocksize,
-            'keepstamp': self.keepstamp,
+            "workdir": self.workdir,
+            "writer": fileWriter,
+            "maxsize": self.maxsize,
+            "blocksize": self.blocksize,
+            "keepstamp": self.keepstamp,
         }
 
-        if self.workerVersionIsOlderThan('uploadFile', '3.0'):
-            args['slavesrc'] = source
+        if self.workerVersionIsOlderThan("uploadFile", "3.0"):
+            args["slavesrc"] = source
         else:
-            args['workersrc'] = source
+            args["workersrc"] = source
 
-        cmd = makeStatusRemoteCommand(self, 'uploadFile', args)
+        cmd = makeStatusRemoteCommand(self, "uploadFile", args)
         res = yield self.runTransferCommand(cmd, fileWriter)
 
         log.msg(
-            f"File '{os.path.basename(self.workersrc)}' upload finished with results {str(res)}")
+            f"File '{os.path.basename(self.workersrc)}' upload finished with results {str(res)}"
+        )
 
         return res
 
 
 class DirectoryUpload(_TransferBuildStep):
+    name = "upload"
 
-    name = 'upload'
+    renderables = ["workersrc", "masterdest", "url", "urlText"]
 
-    renderables = [
-        'workersrc',
-        'masterdest',
-        'url',
-        'urlText'
-    ]
-
-    def __init__(self, workersrc=None, masterdest=None,
-                 workdir=None, maxsize=None, blocksize=16 * 1024,
-                 compress=None, url=None, urlText=None,
-                 **buildstep_kwargs
-                 ):
+    def __init__(
+        self,
+        workersrc=None,
+        masterdest=None,
+        workdir=None,
+        maxsize=None,
+        blocksize=16 * 1024,
+        compress=None,
+        url=None,
+        urlText=None,
+        **buildstep_kwargs,
+    ):
         # Emulate that first two arguments are positional.
         if workersrc is None or masterdest is None:
             raise TypeError("__init__() takes at least 3 arguments")
@@ -195,9 +208,8 @@ class DirectoryUpload(_TransferBuildStep):
         self.masterdest = masterdest
         self.maxsize = maxsize
         self.blocksize = blocksize
-        if compress not in (None, 'gz', 'bz2'):
-            config.error(
-                "'compress' must be one of None, 'gz', or 'bz2'")
+        if compress not in (None, "gz", "bz2"):
+            config.error("'compress' must be one of None, 'gz', or 'bz2'")
         self.compress = compress
         self.url = url
         self.urlText = urlText
@@ -214,7 +226,9 @@ class DirectoryUpload(_TransferBuildStep):
         # properly. TODO: maybe pass the master's basedir all the way down
         # into the BuildStep so we can do this better.
         masterdest = os.path.expanduser(masterdest)
-        log.msg(f"DirectoryUpload started, from worker {repr(source)} to master {repr(masterdest)}")
+        log.msg(
+            f"DirectoryUpload started, from worker {repr(source)} to master {repr(masterdest)}"
+        )
 
         self.descriptionDone = f"uploading {os.path.basename(source)}"
         if self.url is not None:
@@ -227,44 +241,49 @@ class DirectoryUpload(_TransferBuildStep):
 
         # we use maxsize to limit the amount of data on both sides
         dirWriter = remotetransfer.DirectoryWriter(
-            masterdest, self.maxsize, self.compress, 0o600)
+            masterdest, self.maxsize, self.compress, 0o600
+        )
 
         # default arguments
         args = {
-            'workdir': self.workdir,
-            'writer': dirWriter,
-            'maxsize': self.maxsize,
-            'blocksize': self.blocksize,
-            'compress': self.compress
+            "workdir": self.workdir,
+            "writer": dirWriter,
+            "maxsize": self.maxsize,
+            "blocksize": self.blocksize,
+            "compress": self.compress,
         }
 
-        if self.workerVersionIsOlderThan('uploadDirectory', '3.0'):
-            args['slavesrc'] = source
+        if self.workerVersionIsOlderThan("uploadDirectory", "3.0"):
+            args["slavesrc"] = source
         else:
-            args['workersrc'] = source
+            args["workersrc"] = source
 
-        cmd = makeStatusRemoteCommand(self, 'uploadDirectory', args)
+        cmd = makeStatusRemoteCommand(self, "uploadDirectory", args)
         res = yield self.runTransferCommand(cmd, dirWriter)
         return res
 
 
 class MultipleFileUpload(_TransferBuildStep, CompositeStepMixin):
-
-    name = 'upload'
+    name = "upload"
     logEnviron = False
 
-    renderables = [
-        'workersrcs',
-        'masterdest',
-        'url',
-        'urlText'
-    ]
+    renderables = ["workersrcs", "masterdest", "url", "urlText"]
 
-    def __init__(self, workersrcs=None, masterdest=None,
-                 workdir=None, maxsize=None, blocksize=16 * 1024, glob=False,
-                 mode=None, compress=None, keepstamp=False, url=None, urlText=None,
-                 **buildstep_kwargs):
-
+    def __init__(
+        self,
+        workersrcs=None,
+        masterdest=None,
+        workdir=None,
+        maxsize=None,
+        blocksize=16 * 1024,
+        glob=False,
+        mode=None,
+        compress=None,
+        keepstamp=False,
+        url=None,
+        urlText=None,
+        **buildstep_kwargs,
+    ):
         # Emulate that first two arguments are positional.
         if workersrcs is None or masterdest is None:
             raise TypeError("__init__() takes at least 3 arguments")
@@ -276,12 +295,10 @@ class MultipleFileUpload(_TransferBuildStep, CompositeStepMixin):
         self.maxsize = maxsize
         self.blocksize = blocksize
         if not isinstance(mode, (int, type(None))):
-            config.error(
-                'mode must be an integer or None')
+            config.error("mode must be an integer or None")
         self.mode = mode
-        if compress not in (None, 'gz', 'bz2'):
-            config.error(
-                "'compress' must be one of None, 'gz', or 'bz2'")
+        if compress not in (None, "gz", "bz2"):
+            config.error("'compress' must be one of None, 'gz', or 'bz2'")
         self.compress = compress
         self.glob = glob
         self.keepstamp = keepstamp
@@ -289,67 +306,64 @@ class MultipleFileUpload(_TransferBuildStep, CompositeStepMixin):
         self.urlText = urlText
 
     def uploadFile(self, source, masterdest):
-        fileWriter = remotetransfer.FileWriter(
-            masterdest, self.maxsize, self.mode)
+        fileWriter = remotetransfer.FileWriter(masterdest, self.maxsize, self.mode)
 
         args = {
-            'workdir': self.workdir,
-            'writer': fileWriter,
-            'maxsize': self.maxsize,
-            'blocksize': self.blocksize,
-            'keepstamp': self.keepstamp,
+            "workdir": self.workdir,
+            "writer": fileWriter,
+            "maxsize": self.maxsize,
+            "blocksize": self.blocksize,
+            "keepstamp": self.keepstamp,
         }
 
-        if self.workerVersionIsOlderThan('uploadFile', '3.0'):
-            args['slavesrc'] = source
+        if self.workerVersionIsOlderThan("uploadFile", "3.0"):
+            args["slavesrc"] = source
         else:
-            args['workersrc'] = source
+            args["workersrc"] = source
 
-        cmd = makeStatusRemoteCommand(self, 'uploadFile', args)
+        cmd = makeStatusRemoteCommand(self, "uploadFile", args)
         return self.runTransferCommand(cmd, fileWriter)
 
     def uploadDirectory(self, source, masterdest):
         dirWriter = remotetransfer.DirectoryWriter(
-            masterdest, self.maxsize, self.compress, 0o600)
+            masterdest, self.maxsize, self.compress, 0o600
+        )
 
         args = {
-            'workdir': self.workdir,
-            'writer': dirWriter,
-            'maxsize': self.maxsize,
-            'blocksize': self.blocksize,
-            'compress': self.compress
+            "workdir": self.workdir,
+            "writer": dirWriter,
+            "maxsize": self.maxsize,
+            "blocksize": self.blocksize,
+            "compress": self.compress,
         }
 
-        if self.workerVersionIsOlderThan('uploadDirectory', '3.0'):
-            args['slavesrc'] = source
+        if self.workerVersionIsOlderThan("uploadDirectory", "3.0"):
+            args["slavesrc"] = source
         else:
-            args['workersrc'] = source
+            args["workersrc"] = source
 
-        cmd = makeStatusRemoteCommand(self, 'uploadDirectory', args)
+        cmd = makeStatusRemoteCommand(self, "uploadDirectory", args)
         return self.runTransferCommand(cmd, dirWriter)
 
     @defer.inlineCallbacks
     def startUpload(self, source, destdir):
         masterdest = os.path.join(destdir, os.path.basename(source))
-        args = {
-            'file': source,
-            'workdir': self.workdir
-        }
+        args = {"file": source, "workdir": self.workdir}
 
-        cmd = makeStatusRemoteCommand(self, 'stat', args)
+        cmd = makeStatusRemoteCommand(self, "stat", args)
         yield self.runCommand(cmd)
         if cmd.rc != 0:
-            msg = f'File {self.workdir}/{source} not available at worker'
-            yield self.addCompleteLog('stderr', msg)
+            msg = f"File {self.workdir}/{source} not available at worker"
+            yield self.addCompleteLog("stderr", msg)
             return FAILURE
-        s = cmd.updates['stat'][-1]
+        s = cmd.updates["stat"][-1]
         if stat.S_ISDIR(s[stat.ST_MODE]):
             result = yield self.uploadDirectory(source, masterdest)
         elif stat.S_ISREG(s[stat.ST_MODE]):
             result = yield self.uploadFile(source, masterdest)
         else:
-            msg = f'{source} is neither a regular file, nor a directory'
-            yield self.addCompleteLog('stderr', msg)
+            msg = f"{source} is neither a regular file, nor a directory"
+            yield self.addCompleteLog("stderr", msg)
             return FAILURE
 
         yield self.uploadDone(result, source, masterdest)
@@ -376,27 +390,40 @@ class MultipleFileUpload(_TransferBuildStep, CompositeStepMixin):
         self.stdio_log = yield self.addLog("stdio")
 
         masterdest = os.path.expanduser(self.masterdest)
-        sources = self.workersrcs if isinstance(self.workersrcs, list) else [self.workersrcs]
+        sources = (
+            self.workersrcs if isinstance(self.workersrcs, list) else [self.workersrcs]
+        )
 
         if self.keepstamp and self.workerVersionIsOlderThan("uploadFile", "2.13"):
-            m = (f"This worker ({self.build.workername}) does not support preserving timestamps. "
-                 "Please upgrade the worker.")
+            m = (
+                f"This worker ({self.build.workername}) does not support preserving timestamps. "
+                "Please upgrade the worker."
+            )
             raise WorkerSetupError(m)
 
         if not sources:
             return SKIPPED
 
         if self.glob:
-            results = yield defer.gatherResults([
-                self.runGlob(os.path.join(self.workdir, source), abandonOnFailure=False)
-                for source in sources
-            ])
+            results = yield defer.gatherResults(
+                [
+                    self.runGlob(
+                        os.path.join(self.workdir, source), abandonOnFailure=False
+                    )
+                    for source in sources
+                ]
+            )
             sources = [self.workerPathToMasterPath(p) for p in flatten(results)]
 
-        log.msg(f"MultipleFileUpload started, from worker {sources!r} to master {masterdest!r}")
+        log.msg(
+            f"MultipleFileUpload started, from worker {sources!r} to master {masterdest!r}"
+        )
 
-        self.descriptionDone = ['uploading', str(len(sources)),
-                                'file' if len(sources) == 1 else 'files']
+        self.descriptionDone = [
+            "uploading",
+            str(len(sources)),
+            "file" if len(sources) == 1 else "files",
+        ]
 
         if not sources:
             result = SKIPPED
@@ -414,14 +441,20 @@ class MultipleFileUpload(_TransferBuildStep, CompositeStepMixin):
 
 
 class FileDownload(_TransferBuildStep):
+    name = "download"
 
-    name = 'download'
+    renderables = ["mastersrc", "workerdest"]
 
-    renderables = ['mastersrc', 'workerdest']
-
-    def __init__(self, mastersrc, workerdest=None,
-                 workdir=None, maxsize=None, blocksize=16 * 1024, mode=None,
-                 **buildstep_kwargs):
+    def __init__(
+        self,
+        mastersrc,
+        workerdest=None,
+        workdir=None,
+        maxsize=None,
+        blocksize=16 * 1024,
+        mode=None,
+        **buildstep_kwargs,
+    ):
         # Emulate that first two arguments are positional.
         if workerdest is None:
             raise TypeError("__init__() takes at least 3 arguments")
@@ -433,8 +466,7 @@ class FileDownload(_TransferBuildStep):
         self.maxsize = maxsize
         self.blocksize = blocksize
         if not isinstance(mode, (int, type(None))):
-            config.error(
-                'mode must be an integer or None')
+            config.error("mode must be an integer or None")
         self.mode = mode
 
     @defer.inlineCallbacks
@@ -446,48 +478,58 @@ class FileDownload(_TransferBuildStep):
         # paths will be interpreted relative to that
         source = os.path.expanduser(self.mastersrc)
         workerdest = self.workerdest
-        log.msg(f"FileDownload started, from master {repr(source)} to worker {repr(workerdest)}")
+        log.msg(
+            f"FileDownload started, from master {repr(source)} to worker {repr(workerdest)}"
+        )
 
         self.descriptionDone = ["downloading to", os.path.basename(workerdest)]
 
         # setup structures for reading the file
         try:
-            fp = open(source, 'rb')  # noqa pylint: disable=consider-using-with
+            fp = open(source, "rb")  # noqa pylint: disable=consider-using-with
         except IOError:
             # if file does not exist, bail out with an error
-            yield self.addCompleteLog('stderr', f'File {source!r} not available at master')
+            yield self.addCompleteLog(
+                "stderr", f"File {source!r} not available at master"
+            )
             return FAILURE
 
         fileReader = remotetransfer.FileReader(fp)
 
         # default arguments
         args = {
-            'maxsize': self.maxsize,
-            'reader': fileReader,
-            'blocksize': self.blocksize,
-            'workdir': self.workdir,
-            'mode': self.mode,
+            "maxsize": self.maxsize,
+            "reader": fileReader,
+            "blocksize": self.blocksize,
+            "workdir": self.workdir,
+            "mode": self.mode,
         }
 
-        if self.workerVersionIsOlderThan('downloadFile', '3.0'):
-            args['slavedest'] = workerdest
+        if self.workerVersionIsOlderThan("downloadFile", "3.0"):
+            args["slavedest"] = workerdest
         else:
-            args['workerdest'] = workerdest
+            args["workerdest"] = workerdest
 
-        cmd = makeStatusRemoteCommand(self, 'downloadFile', args)
+        cmd = makeStatusRemoteCommand(self, "downloadFile", args)
         res = yield self.runTransferCommand(cmd)
         return res
 
 
 class StringDownload(_TransferBuildStep):
+    name = "string_download"
 
-    name = 'string_download'
+    renderables = ["workerdest", "s"]
 
-    renderables = ['workerdest', 's']
-
-    def __init__(self, s, workerdest=None,
-                 workdir=None, maxsize=None, blocksize=16 * 1024, mode=None,
-                 **buildstep_kwargs):
+    def __init__(
+        self,
+        s,
+        workerdest=None,
+        workdir=None,
+        maxsize=None,
+        blocksize=16 * 1024,
+        mode=None,
+        **buildstep_kwargs,
+    ):
         # Emulate that first two arguments are positional.
         if workerdest is None:
             raise TypeError("__init__() takes at least 3 arguments")
@@ -499,7 +541,9 @@ class StringDownload(_TransferBuildStep):
         self.maxsize = maxsize
         self.blocksize = blocksize
         if not isinstance(mode, (int, type(None))):
-            config.error(f"StringDownload step's mode must be an integer or None, got '{mode}'")
+            config.error(
+                f"StringDownload step's mode must be an integer or None, got '{mode}'"
+            )
         self.mode = mode
 
     @defer.inlineCallbacks
@@ -520,35 +564,33 @@ class StringDownload(_TransferBuildStep):
 
         # default arguments
         args = {
-            'maxsize': self.maxsize,
-            'reader': fileReader,
-            'blocksize': self.blocksize,
-            'workdir': self.workdir,
-            'mode': self.mode,
+            "maxsize": self.maxsize,
+            "reader": fileReader,
+            "blocksize": self.blocksize,
+            "workdir": self.workdir,
+            "mode": self.mode,
         }
 
-        if self.workerVersionIsOlderThan('downloadFile', '3.0'):
-            args['slavedest'] = workerdest
+        if self.workerVersionIsOlderThan("downloadFile", "3.0"):
+            args["slavedest"] = workerdest
         else:
-            args['workerdest'] = workerdest
+            args["workerdest"] = workerdest
 
-        cmd = makeStatusRemoteCommand(self, 'downloadFile', args)
+        cmd = makeStatusRemoteCommand(self, "downloadFile", args)
         res = yield self.runTransferCommand(cmd)
         return res
 
 
 class JSONStringDownload(StringDownload):
-
     name = "json_download"
 
-    def __init__(self, o, workerdest=None,
-                 **buildstep_kwargs):
+    def __init__(self, o, workerdest=None, **buildstep_kwargs):
         # Emulate that first two arguments are positional.
         if workerdest is None:
             raise TypeError("__init__() takes at least 3 arguments")
 
-        if 's' in buildstep_kwargs:
-            del buildstep_kwargs['s']
+        if "s" in buildstep_kwargs:
+            del buildstep_kwargs["s"]
         super().__init__(s=o, workerdest=workerdest, **buildstep_kwargs)
 
     @defer.inlineCallbacks
@@ -559,17 +601,15 @@ class JSONStringDownload(StringDownload):
 
 
 class JSONPropertiesDownload(StringDownload):
-
     name = "json_properties_download"
 
-    def __init__(self, workerdest=None,
-                 **buildstep_kwargs):
+    def __init__(self, workerdest=None, **buildstep_kwargs):
         # Emulate that first two arguments are positional.
         if workerdest is None:
             raise TypeError("__init__() takes at least 2 arguments")
 
-        if 's' in buildstep_kwargs:
-            del buildstep_kwargs['s']
+        if "s" in buildstep_kwargs:
+            del buildstep_kwargs["s"]
         super().__init__(s=None, workerdest=workerdest, **buildstep_kwargs)
 
     @defer.inlineCallbacks
@@ -579,12 +619,11 @@ class JSONPropertiesDownload(StringDownload):
         for key, value, _ in properties.asList():
             props[key] = value
 
-        self.s = json.dumps({
-            "properties": props,
-            "sourcestamps": [
-                ss.asDict()
-                for ss in self.build.getAllSourceStamps()
-            ],
-        },)
+        self.s = json.dumps(
+            {
+                "properties": props,
+                "sourcestamps": [ss.asDict() for ss in self.build.getAllSourceStamps()],
+            },
+        )
         res = yield super().run()
         return res

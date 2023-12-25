@@ -22,7 +22,6 @@ from twisted.trial import unittest
 
 
 class FuzzTestCase(unittest.TestCase):
-
     # run each test case for 10s
     FUZZ_TIME = 10
 
@@ -34,5 +33,5 @@ class FuzzTestCase(unittest.TestCase):
             yield self.do_fuzz(endTime)
 
     # delete this test case entirely if fuzzing is not enabled
-    if 'BUILDBOT_FUZZ' not in os.environ:
+    if "BUILDBOT_FUZZ" not in os.environ:
         del test_fuzz
