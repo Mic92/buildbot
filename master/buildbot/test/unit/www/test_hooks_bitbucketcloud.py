@@ -41,7 +41,7 @@ bitbucketPRproperties = {
     "bitbucket.fromRef.commit.hash": "a87e21f7433d8c16ac7be7413483fbb76c72a8ba",
     "bitbucket.fromRef.commit.message": None,
     "bitbucket.fromRef.repository.fullName": "CI/py-repo",
-    "bitbucket.fromRef.repository.links.self.href": "http://localhost:7990/projects/CI/repos/py-repo",
+    "bitbucket.fromRef.repository.links.self.href": "http://localhost:7990/projects/CI/repos/py-repo",  # noqa: E501
     "bitbucket.fromRef.repository.owner.display_name": "CI",
     "bitbucket.fromRef.repository.owner.nickname": "CI",
     "bitbucket.fromRef.repository.ownerName": "CI",

@@ -31,8 +31,8 @@ def gitDescribeToPep440(version):
     # (increment last digit and add dev before 20)
 
     VERSION_MATCH = re.compile(
-        r"(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)(\.post(?P<post>\d+))?(-(?P<dev>\d+))?(-g(?P<commit>.+))?"
-    )  # noqa pylint: disable=line-too-long
+        r"(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)(\.post(?P<post>\d+))?(-(?P<dev>\d+))?(-g(?P<commit>.+))?"  # noqa pylint: disable=line-too-long
+    )
     v = VERSION_MATCH.search(version)
     if v:
         major = int(v.group("major"))

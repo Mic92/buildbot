@@ -162,7 +162,7 @@ class IndexResource(TestReactorMixin, www.WwwTestMixin, unittest.TestCase):
             [pypugjs]
             exp.update(
                 {
-                    "plugin/views/plugin.html": '<div class="myclass"><pre>this is customized</pre></div>'
+                    "plugin/views/plugin.html": '<div class="myclass"><pre>this is customized</pre></div>'  # noqa: E501
                 }
             )
         except ImportError:

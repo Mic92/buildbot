@@ -103,8 +103,8 @@ class TestRevlinkMatch(unittest.TestCase):
         )
         self.assertEqual(
             matcher(revision, "git://notmuchmail.org/git/notmuch"),
-            "http://git.notmuchmail.org/git/notmuch/commit/f717d2ece1836c863f9cc02abd1ff2539307cd1d",
-        )  # noqa pylint: disable=line-too-long
+            "http://git.notmuchmail.org/git/notmuch/commit/f717d2ece1836c863f9cc02abd1ff2539307cd1d",  # noqa pylint: disable=line-too-long
+        )
 
     def testSingleString(self):
         revision = "rev"
@@ -128,8 +128,8 @@ class TestGitwebMatch(unittest.TestCase):
         matcher = GitwebMatch("git://orgmode.org/(?P<repo>.*)", "http://orgmode.org/w/")
         self.assertEqual(
             matcher(revision, "git://orgmode.org/org-mode.git"),
-            "http://orgmode.org/w/?p=org-mode.git;a=commit;h=490d6ace10e0cfe74bab21c59e4b7bd6aa3c59b8",
-        )  # noqa pylint: disable=line-too-long
+            "http://orgmode.org/w/?p=org-mode.git;a=commit;h=490d6ace10e0cfe74bab21c59e4b7bd6aa3c59b8",  # noqa pylint: disable=line-too-long
+        )
 
 
 class TestBitbucketRevlink(unittest.TestCase):

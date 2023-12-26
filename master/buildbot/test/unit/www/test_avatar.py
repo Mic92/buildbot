@@ -206,7 +206,7 @@ github_commit_search_reply = {
             "url": "https://api.github.com/repos/defunkt-org/defunkt-repo/"
             "commits/1111111111111111111111111111111111111111",
             "sha": "1111111111111111111111111111111111111111",
-            "node_id": "MDY6Q29tbWl0NDM0MzQzNDM6MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEx",
+            "node_id": "MDY6Q29tbWl0NDM0MzQzNDM6MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEx",  # noqa: E501
             "html_url": "https://github.com/defunkt-org/defunkt-repo/"
             "commit/1111111111111111111111111111111111111111",
             "comments_url": "https://api.github.com/repos/defunkt-org/defunkt-repo/"
@@ -393,7 +393,7 @@ github_commit_search_no_user_reply = {
             "url": "https://api.github.com/repos/defunkt-org/defunkt-repo/"
             "commits/1111111111111111111111111111111111111111",
             "sha": "1111111111111111111111111111111111111111",
-            "node_id": "MDY6Q29tbWl0NDM0MzQzNDM6MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEx",
+            "node_id": "MDY6Q29tbWl0NDM0MzQzNDM6MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEx",  # noqa: E501
             "html_url": "https://github.com/defunkt-org/defunkt-repo/"
             "commit/1111111111111111111111111111111111111111",
             "comments_url": "https://api.github.com/repos/defunkt-org/defunkt-repo/"
