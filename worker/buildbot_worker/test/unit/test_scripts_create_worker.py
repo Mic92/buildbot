@@ -193,7 +193,7 @@ class TestMakeTAC(TestDefaultOptionsMixin, unittest.TestCase):
         test that using special characters in options strings won't break
         generated TAC file.
         """
-        test_string = '"" & | ^ # @ \\& \\| \\^ \\# \\@ \\n' " \x07 \" \\\" ' \\' ''"
+        test_string = "\"\" & | ^ # @ \\& \\| \\^ \\# \\@ \\n \x07 \" \\\" ' \\' ''"
         options = self.options.copy()
         options["basedir"] = test_string
         options["host"] = test_string
@@ -844,7 +844,7 @@ class TestCreateWorker(
         )
 
         # check that correct error message was printed on stdout
-        self.assertStdoutEqual("err-msg\n" "failed to configure worker in bdir\n")
+        self.assertStdoutEqual("err-msg\nfailed to configure worker in bdir\n")
 
     def testMinArgs(self):
         """

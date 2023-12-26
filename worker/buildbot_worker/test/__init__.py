@@ -71,5 +71,5 @@ except ImportError:
         import mock
     except ImportError:
         raise ImportError(
-            "Buildbot tests require the 'mock' module; " "try 'pip install mock'"
+            "Buildbot tests require the 'mock' module; try 'pip install mock'"
         )

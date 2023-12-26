@@ -142,7 +142,7 @@ class TestReactor(NonReactor, CoreReactor, Clock):
                 yield r
         except Exception as e:
             log.msg(
-                "Unhandled exception from deferred when doing " "TestReactor.advance()",
+                "Unhandled exception from deferred when doing TestReactor.advance()",
                 e,
             )
             raise

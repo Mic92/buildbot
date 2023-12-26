@@ -137,7 +137,7 @@ class CreateWorkerOptions(MakerBase):
             "log-count",
             "l",
             "10",
-            "limit the number of kept old twisted log files " "(None for unlimited)",
+            "limit the number of kept old twisted log files (None for unlimited)",
         ],
         [
             "allow-shutdown",
@@ -265,7 +265,7 @@ class CreateWorkerOptions(MakerBase):
 
         if self["allow-shutdown"] not in [None, "signal", "file"]:
             raise usage.UsageError(
-                "allow-shutdown needs to be one of" " 'signal' or 'file'"
+                "allow-shutdown needs to be one of 'signal' or 'file'"
             )
 
 

@@ -107,7 +107,7 @@ class BBService(win32serviceutil.ServiceFramework):
     _svc_name_ = "BuildBot"
     _svc_display_name_ = _svc_name_
     _svc_description_ = (
-        "Manages local buildbot workers and masters - " "see https://buildbot.net"
+        "Manages local buildbot workers and masters - see https://buildbot.net"
     )
 
     def __init__(self, args):
