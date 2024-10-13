@@ -55,6 +55,7 @@ class Dispatcher(BaseDispatcher):
         self, avatarId: bytes | tuple[()], mind: object, *interfaces: type[Interface]
     ) -> Generator[defer.Deferred[Any], None, tuple[type[Interface], object, Callable]]:
         assert interfaces[0] == pb.IPerspective
+        assert isinstance(avatarId, bytes)
         avatarIdStr = bytes2unicode(avatarId)
 
         persp = None
