@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 
     from buildbot.config.master import MasterConfig
     from buildbot.process.build import Build
+    from buildbot.process.buildstep import BuildStep
     from buildbot.process.log import Log
     from buildbot.process.properties import Properties
     from buildbot.process.workerforbuilder import LatentWorkerForBuilder
@@ -305,7 +306,7 @@ class IProperties(Interface):
         """
         raise NotImplementedError
 
-    def render(value: Any) -> IRenderable:
+    def render(value: Any) -> Deferred[IRenderable]:
         """Render @code{value} as an L{IRenderable}.  This essentially coerces
         @code{value} to an L{IRenderable} and calls its @L{getRenderingFor}
         method.
@@ -332,7 +333,7 @@ class ITriggerableScheduler(Interface):
 
 
 class IBuildStepFactory(Interface):
-    def buildStep() -> None:
+    def buildStep() -> BuildStep:
         pass
 
 
